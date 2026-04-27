@@ -15,40 +15,39 @@ const isloadcreate = ref(false);
 const isloadedit = ref(false);
 
 const createNameInput = ref(null)
-const createTelpInput = ref(null)
+const createAlamatInput = ref(null)
 const editNameInput = ref(null)
-const editTelpInput = ref(null)
+const editAlamatInput = ref(null)
 
 const search = ref('');
 const form = ref({
     id: '',
-    nama: '',
-    telp: ''
+    methode: ''
 })
 const err = ref({});
 
-const drivers = ref([]);
+const methods = ref([]);
 const paginate = ref({});
 
 const openModalCreate = ref(false);
 const openModalUpdate = ref(false);
 const openModalDelete = ref(false);
 
-async function getdrivers(page = 1) {
+async function getmethods(page = 1) {
     try{
         isloading.value = true
-        const response = await axios.get('/api/master/drivers', {
+        const response = await axios.get('/api/master/methods', {
             params: {
-                page,
+                page: {page},
                 search: search.value
             }
         });
-        drivers.value = response.data.drivers.data;
-        paginate.value = response.data.drivers;
+        methods.value = response.data.methods.data;
+        paginate.value = response.data.methods;
     }catch(error){
         Swal.fire({
             title: error.response.status,
-            text: 'Terjadi kesalahan saat mengambil data drivers 🚫',
+            text: 'Terjadi kesalahan saat mengambil data cara pembayaran 🚫',
             icon: 'error',
             confirmButtonText: 'Coba lagi'
         })
@@ -59,7 +58,7 @@ async function getdrivers(page = 1) {
 async function create() {
     try{
         isloadcreate.value = true;
-        const response = await axios.post('/api/master/driver', form.value);
+        const response = await axios.post('/api/master/methode', form.value);
         reset();
         await nextTick()
         createNameInput.value?.focus()
@@ -78,13 +77,13 @@ async function create() {
 async function edit() {
     try{
         isloadedit.value = true
-        const response = await axios.patch(`/api/master/driver/${form.value.id}`, form.value);
+        const response = await axios.patch('/api/master/methode', form.value);
         openModalUpdate.value = false;
         reset();
-        getdrivers();
+        getmethods();
         Swal.fire({
             title: 'Berhasil!',
-            text: 'Data driver berhasil dirubah',
+            text: 'Cara pembayaran berhasil dirubah',
             icon: 'success',
             confirmButtonText: 'OK'
         })
@@ -103,16 +102,16 @@ async function edit() {
 async function hapus() {
     try{
         isloaddelete.value = true
-        const response = await axios.delete(`/api/master/drivers/${form.value.id}`);
+        const response = await axios.delete(`/api/master/methode/${form.value.id}`);
         Swal.fire({
             title: 'Berhasil!',
-            text: 'Berhasil menghapus driver',
+            text: 'Berhasil menghapus cara pembayaran',
             icon: 'success',
             confirmButtonText: 'OK'
         })
         openModalDelete.value = false;
         reset();
-        getdrivers();
+        getmethods();
         //console.log(response.data);
     }catch(error){
         Swal.fire({
@@ -129,35 +128,33 @@ async function hapus() {
     }
 }
 function prev(page){
-    getdrivers(page);
+    getvendors(page);
 }
 function next(page){
-    getdrivers(page);
+    getvendors(page);
 }
 function page(page){
-    getdrivers(page);
+    getvendors(page);
 }
 
-function detail(driver){
-    form.value.id = driver.id;
-    form.value.nama = driver.nama;
-    form.value.telp = driver.telp;
+function detail(methode){
+    form.value.id = methode.id;
+    form.value.methode = methode.methode;
     openModalUpdate.value = true;
 }
-function del(driver){
-    form.value.id = driver.id;
+function del(methode){
+    form.value.id = methode.id;
     openModalDelete.value = true
 }
 function reset(){
     form.value.id = '';
-    form.value.nama = '';
-    form.value.telp = '';
+    form.value.methode = '';
     err.value = {}
 }
 watch(search, (value) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
-        getdrivers(1);
+        getvendors(1);
     }, 400);
 });
 function handleClickOutside() {
@@ -167,7 +164,7 @@ onBeforeUnmount(() => {
     window.removeEventListener('click', handleClickOutside)
 })
 onMounted(()=>{
-    getdrivers();
+    getmethods();
     window.addEventListener('click', handleClickOutside);
 });
 watch(openModalCreate, async (val) => {
@@ -193,7 +190,7 @@ watch(openModalUpdate, async (val) => {
             <h2
                 class="text-xl font-semibold leading-tight text-white"
             >
-                Driver
+                Vendors
             </h2>
         </template>
         <Loading v-if="isloading" />
@@ -219,7 +216,7 @@ watch(openModalUpdate, async (val) => {
                                 <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                     <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
                                 </svg>
-                                Add Driver
+                                Add Cara Pembayaran
                             </button>
                         </div>
                     </div>
@@ -228,19 +225,17 @@ watch(openModalUpdate, async (val) => {
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
                                     <th scope="col" class="px-4 py-4">#</th>
-                                    <th scope="col" class="px-4 py-3">Nama</th>
-                                    <th scope="col" class="px-4 py-3">Nomor Telp</th>
+                                    <th scope="col" class="px-4 py-3">Cara Pembayaran</th>
                                     <th scope="col" class="px-4 py-3">
                                         <span class="sr-only">Actions</span>
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <template v-if="drivers.length > 0">
-                                    <tr v-for="(driver, index) in drivers" :key="index" class="border-b dark:border-gray-700">
+                                <template v-if="methods.length > 0">
+                                    <tr v-for="(methode, index) in methods" :key="index" class="border-b dark:border-gray-700">
                                         <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ paginate.from + index }}</th>
-                                        <td class="px-4 py-3">{{ driver.nama }}</td>
-                                        <td class="px-4 py-3">{{ driver.telp }}</td>
+                                        <td class="px-4 py-3">{{ methode.methode }}</td>
                                         <td class="px-4 py-3 flex items-center justify-end">
                                             <button @click.stop="menu = menu === index ? null : index" class="inline-flex items-center text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 p-1.5 dark:hover-bg-gray-800 text-center text-gray-500 hover:text-gray-800 rounded-lg focus:outline-none" type="button">
                                                 <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -250,7 +245,7 @@ watch(openModalUpdate, async (val) => {
                                             <div v-if="index === menu" class="z-10 w-44 absolute bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600">
                                                 <ul class="py-1 text-sm" aria-labelledby="apple-imac-27-dropdown-button">
                                                     <li>
-                                                        <button type="button" @click.stop="detail(driver)" class="flex w-full items-center py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-gray-700 dark:text-gray-200">
+                                                        <button type="button" @click.stop="detail(methode)" class="flex w-full items-center py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-gray-700 dark:text-gray-200">
                                                             <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewbox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                                 <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
                                                                 <path fill-rule="evenodd" clip-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
@@ -259,7 +254,7 @@ watch(openModalUpdate, async (val) => {
                                                         </button>
                                                     </li>
                                                     <li>
-                                                        <button type="button" @click="del(driver)" class="flex w-full items-center py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500 dark:hover:text-red-400">
+                                                        <button type="button" @click="del(methode)" class="flex w-full items-center py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500 dark:hover:text-red-400">
                                                             <svg class="w-4 h-4 mr-2" viewbox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                                                 <path fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" d="M6.09922 0.300781C5.93212 0.30087 5.76835 0.347476 5.62625 0.435378C5.48414 0.523281 5.36931 0.649009 5.29462 0.798481L4.64302 2.10078H1.59922C1.36052 2.10078 1.13161 2.1956 0.962823 2.36439C0.79404 2.53317 0.699219 2.76209 0.699219 3.00078C0.699219 3.23948 0.79404 3.46839 0.962823 3.63718C1.13161 3.80596 1.36052 3.90078 1.59922 3.90078V12.9008C1.59922 13.3782 1.78886 13.836 2.12643 14.1736C2.46399 14.5111 2.92183 14.7008 3.39922 14.7008H10.5992C11.0766 14.7008 11.5344 14.5111 11.872 14.1736C12.2096 13.836 12.3992 13.3782 12.3992 12.9008V3.90078C12.6379 3.90078 12.8668 3.80596 13.0356 3.63718C13.2044 3.46839 13.2992 3.23948 13.2992 3.00078C13.2992 2.76209 13.2044 2.53317 13.0356 2.36439C12.8668 2.1956 12.6379 2.10078 12.3992 2.10078H9.35542L8.70382 0.798481C8.62913 0.649009 8.5143 0.523281 8.37219 0.435378C8.23009 0.347476 8.06631 0.30087 7.89922 0.300781H6.09922ZM4.29922 5.70078C4.29922 5.46209 4.39404 5.23317 4.56282 5.06439C4.73161 4.8956 4.96052 4.80078 5.19922 4.80078C5.43791 4.80078 5.66683 4.8956 5.83561 5.06439C6.0044 5.23317 6.09922 5.46209 6.09922 5.70078V11.1008C6.09922 11.3395 6.0044 11.5684 5.83561 11.7372C5.66683 11.906 5.43791 12.0008 5.19922 12.0008C4.96052 12.0008 4.73161 11.906 4.56282 11.7372C4.39404 11.5684 4.29922 11.3395 4.29922 11.1008V5.70078ZM8.79922 4.80078C8.56052 4.80078 8.33161 4.8956 8.16282 5.06439C7.99404 5.23317 7.89922 5.46209 7.89922 5.70078V11.1008C7.89922 11.3395 7.99404 11.5684 8.16282 11.7372C8.33161 11.906 8.56052 12.0008 8.79922 12.0008C9.03791 12.0008 9.26683 11.906 9.43561 11.7372C9.6044 11.5684 9.69922 11.3395 9.69922 11.1008V5.70078C9.69922 5.46209 9.6044 5.23317 9.43561 5.06439C9.26683 4.8956 9.03791 4.80078 8.79922 4.80078Z" />
                                                             </svg>
@@ -273,7 +268,7 @@ watch(openModalUpdate, async (val) => {
                                 </template>
                                 <template v-else>
                                     <tr>
-                                        <td colspan="4">Data drivers tidak ada</td>
+                                        <td colspan="2" class="text-center">Cara pembayaran tidak ada</td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -285,13 +280,13 @@ watch(openModalUpdate, async (val) => {
 
             <!-- Create modal -->
             <div v-if="openModalCreate" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-2xl max-h-full">
+                <div class="relative p-4 w-full max-w-lg max-h-full">
                     <!-- Modal content -->
                     <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
                         <!-- Modal header -->
                         <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Driver</h3>
-                            <button type="button" @click="openModalCreate = false; reset; getdrivers()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add cara pembayaran</h3>
+                            <button type="button" @click="openModalCreate = false; reset; getmethods()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
                                 <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                 </svg>
@@ -300,16 +295,11 @@ watch(openModalUpdate, async (val) => {
                         </div>
                         <!-- Modal body -->
                         <form @submit.prevent="create">
-                            <div class="grid gap-4 mb-4 sm:grid-cols-2">
+                            <div class="grid gap-4 mb-4 grid-cols-1">
                                 <div>
-                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama</label>
-                                    <input ref="createNameInput" @keydown.enter.prevent="createTelpInput.focus()" v-model="form.nama" type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nama">
-                                    <p v-if="err.nama" class="text-xs text-red-400">{{ err.nama[0] }}</p>
-                                </div>
-                                <div>
-                                    <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Telp</label>
-                                    <input ref="createTelpInput" @keydown.enter.prevent="create" v-model="form.telp" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Telp">
-                                    <p v-if="err.telp" class="text-xs text-red-400">{{ err.telp[0] }}</p>
+                                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cara pembayaran</label>
+                                    <input ref="createNameInput" @keydown.enter.prevent="create" v-model="form.methode" type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Cara pembayaran">
+                                    <p v-if="err.methode" class="text-xs text-red-400">{{ err.methode[0] ? 'Cara pembayaran sudah ada' : err.methode[0]  }}</p>
                                 </div>
                             </div>
                             <button type="submit" :disabled="isloadcreate" :class="isloadcreate ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
@@ -324,12 +314,12 @@ watch(openModalUpdate, async (val) => {
             </div>
             <!-- Update modal -->
             <div v-if="openModalUpdate" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-2xl max-h-full">
+                <div class="relative p-4 w-full max-w-lg max-h-full">
                     <!-- Modal content -->
                     <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
                         <!-- Modal header -->
                         <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Update Product</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Update cara pembayaran</h3>
                             <button type="button" @click.stop="openModalUpdate = false; reset" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="updateProductModal">
                                 <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -339,23 +329,18 @@ watch(openModalUpdate, async (val) => {
                         </div>
                         <!-- Modal body -->
                         <form @submit.prevent="edit">
-                            <div class="grid gap-4 mb-4 sm:grid-cols-2">
+                            <div class="grid gap-4 mb-4 grid-cols-1">
                                 <div>
-                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama</label>
-                                    <input v-model="form.nama" @keydown.enter.prevent="editTelpInput.focus()" type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nama">
-                                    <p v-if="err.nama" class="text-xs text-red-400">{{ err.nama[0] }}</p>
-                                </div>
-                                <div>
-                                    <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Telp</label>
-                                    <input v-model="form.telp" @keydown.enter.prevent="edit" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Telp">
-                                    <p v-if="err.telp" class="text-xs text-red-400">{{ err.telp[0] }}</p>
+                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cara pembayaran</label>
+                                    <input v-model="form.methode" @keydown.enter.prevent="edit" type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                    <p v-if="err.methode" class="text-xs text-red-400">{{ err.methode[0] ? 'Cara pembayaran sudah ada' : err.methode[0]  }}</p>
                                 </div>
                             </div>
                             <button type="submit" :disabled="isloadedit" :class="isloadedit ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                                 <svg class="mr-1 -ml-1 w-6 h-6" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                                 </svg>
-                                {{ isloadedit ? 'Mengedit driver' : 'Edit driver' }}
+                                {{ isloadedit ? 'Mengedit cara pembayaran' : 'Edit pembayaran' }}
                             </button>
                         </form>
                     </div>

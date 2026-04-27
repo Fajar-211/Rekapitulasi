@@ -21,12 +21,18 @@ return new class extends Migration
                 table: 'drivers',
                 indexName: 'purchases_driver_id'
             );
-            $table->decimal('tonase');
-            $table->decimal('harga');
+            $table->foreignId('methode_id')->constrained(
+                table: 'methode_pembayarans',
+                indexName: 'purchases_methode_pembayaran_id'
+            );
             $table->foreignId('status_id')->constrained(
                 table: 'statuses',
                 indexName: 'purchases_status_id'
             );
+            $table->decimal('tonase');
+            $table->decimal('harga');
+            $table->decimal('size');
+            $table->date('tanggal');
             $table->decimal('jumlah', 15, 2);
             $table->timestamps();
         });

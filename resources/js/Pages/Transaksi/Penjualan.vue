@@ -10,6 +10,7 @@ import vSelect from "vue-select"
 import "vue-select/dist/vue-select.css"
 import { useCurrencyInput } from 'vue-currency-input'
 import { computed } from 'vue';
+import { Datepicker } from 'flowbite-datepicker';
 
 let timeout = null;
 const menu = ref(null);
@@ -18,6 +19,8 @@ const isloaddelete = ref(false);
 const isloadcreate = ref(false);
 const isloadedit = ref(false);
 const isloadshow = ref(false);
+
+const tabcreate = ref('');
 
 const createcustomer = ref(null)
 const createstatus = ref(null)
@@ -42,6 +45,7 @@ const editmati = ref(null);
 const search = ref('');
 const form = ref({
     id: '',
+    tanggal: new Date().toISOString().split('T')[0],
     customer: '',
     status: '',
     tonase: null,
@@ -52,6 +56,7 @@ const form = ref({
     bongkar: null,
     mati: null,
     jumlah: null,
+    titip: []
 })
 const jumlah = computed(() => {
     const harga = form.value.harga ? Number(String(form.value.harga).replace(/\./g, '')) : 0
@@ -91,7 +96,9 @@ async function getsalers(page = 1) {
         paginate.value = response.data.salers;
         customers.value = response.data.customers;
         statuses.value = response.data.statuses;
+        console.log(response.data.salers);
     }catch(error){
+        console.log(error?.response);
         Swal.fire({
             title: error.response.status,
             text: 'Terjadi kesalahan saat mengambil data penjualan 🚫',
@@ -221,6 +228,18 @@ function page(page){
     getsalers(page);
 }
 
+function handlecreatepenjualan(){
+    openModalCreate.value = true;
+    tabcreate.value = 'form';
+}
+function handleaddtitipan(){
+    form.value.titip.push({
+        nominal: ''
+    });
+}
+function handledroptitipan(index){
+    form.value.titip.splice(index,1);
+}
 function detail(saler){
     form.value.id = saler.id;
     form.value.customer = saler.customer.id
@@ -233,6 +252,7 @@ function detail(saler){
     form.value.bongkar = saler.bongkar,
     form.value.mati = saler.mati
     form.value.jumlah = saler.jumlah,
+    form.value.titip = saler.titip ?? []
     openModalUpdate.value = true;
 }
 function del(saler){
@@ -257,6 +277,7 @@ function reset(){
     form.value.bongkar = null;
     form.value.mati = null;
     form.value.jumlah = null;
+    form.value.titip = [];
     err.value = {};
     saler.value = [];
 }
@@ -431,6 +452,16 @@ function formatMati(e) {
     // gabungkan lagi
     form.value.mati = parts.join(',')
 }
+function formatTitip(e, index) {
+    let value = e.target.value.replace(/\D/g, '')
+
+    if (!value) {
+        form.value.titip[index].nominal = ''
+        return
+    }
+
+    form.value.titip[index].nominal = Number(value).toLocaleString('id-ID')
+}
 function parseNumber(value) {
     if (!value) return null
     return Number(
@@ -440,24 +471,25 @@ function parseNumber(value) {
     )
 }
 function formatDate(dateString) {
-    return new Date(dateString)
-        .toLocaleDateString('id-ID')
-        .replace(/\//g, '-')
-}
+    return new Date(dateString).toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    })
+}const formatTonaseview = (val) => {
+  return new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(val);
+};
+
 </script>
 
 <template>
     <Head title="Penjualan" />
     <AuthenticatedLayout>
-        <template #header>
-            <h2
-                class="text-xl font-semibold leading-tight text-gray-800"
-            >
-                Penjualan
-            </h2>
-        </template>
-
-        <div class="mx-auto max-w-screen-xl px-4 lg:px-12 mt-10">
+        <Loading v-if="isloading" />
+            <div class="mx-auto max-w-screen-xl px-4 lg:px-12 mt-10">
                 <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
                     <div class="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 p-4">
                         <div class="w-full md:w-1/2">
@@ -474,7 +506,7 @@ function formatDate(dateString) {
                             </form>
                         </div>
                         <div class="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
-                            <button type="button" @click="openModalCreate = true" class="flex items-center justify-center text-white bg-cyan-400 hover:bg-cyan-600 focus:ring-2 focus:ring-cyan-200 font-medium rounded-lg text-sm px-4 py-2 transition-all duration-300">
+                            <button type="button" @click="handlecreatepenjualan" class="flex items-center justify-center text-white bg-cyan-400 hover:bg-cyan-600 focus:ring-2 focus:ring-cyan-200 font-medium rounded-lg text-sm px-4 py-2 transition-all duration-300">
                                 <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                     <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
                                 </svg>
@@ -487,12 +519,16 @@ function formatDate(dateString) {
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
                                     <th scope="col" class="px-4 py-4">#</th>
-                                    <th scope="col" class="px-4 py-3">Tanggal</th>
-                                    <th scope="col" class="px-4 py-3">Customer</th>
-                                    <th scope="col" class="px-4 py-3">Harga</th>
-                                    <th scope="col" class="px-4 py-3">Tonase</th>
-                                    <th scope="col" class="px-4 py-3">Jumlah</th>
-                                    <th scope="col" class="px-4 py-3">Status</th>
+                                    <th scope="col" class="px-4 py-3">TANGGAL</th>
+                                    <th scope="col" class="px-4 py-3">CUSTOMER</th>
+                                    <th scope="col" class="px-4 py-3">TONASE</th>
+                                    <th scope="col" class="px-4 py-3">HARGA</th>
+                                    <th scope="col" class="px-4 py-3">JUMLAH</th>
+                                    <th scope="col" class="px-4 py-3">KASBON</th>
+                                    <th scope="col" class="px-4 py-3">BONGKAR</th>
+                                    <th scope="col" class="px-4 py-3">TITIP</th>
+                                    <th scope="col" class="px-4 py-3">PIUTANG</th>
+                                    <th scope="col" class="px-4 py-3">STATUS</th>
                                     <th scope="col" class="px-4 py-3">
                                         <span class="sr-only">Actions</span>
                                     </th>
@@ -502,12 +538,16 @@ function formatDate(dateString) {
                                 <template v-if="salers.length > 0">
                                     <tr v-for="(saler, index) in salers" :key="index" class="border-b dark:border-gray-700">
                                         <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ paginate.from + index }}</th>
-                                        <td class="px-4 py-3">{{ formatDate(saler.created_at) }}</td>
-                                        <td class="px-4 py-3">{{ saler.customer.nama_depan }}</td>
+                                        <td class="px-4 py-3">{{ formatDate(saler.tanggal) }}</td>
+                                        <td class="px-4 py-3">{{ saler.customer }}</td>
+                                        <td class="px-4 py-3">{{ formatTonaseview(Number(saler.tonase)) }}</td>
                                         <td class="px-4 py-3">{{ Number(saler.harga).toLocaleString('id-ID') }}</td>
-                                        <td class="px-4 py-3">{{ Number(saler.tonase).toLocaleString('id-ID') }}</td>
-                                        <td class="px-4 py-3">Rp. {{ Number(saler.jumlah).toLocaleString('id-ID') }}</td>
-                                        <td class="px-4 py-3" :class="saler.status.status == 'Lunas' ? 'text-emerald-500' : 'text-red-500' ">{{ saler.status.status }}</td>
+                                        <td class="px-4 py-3">{{ Number(saler.jumlah).toLocaleString('id-ID') }}</td>
+                                        <td class="px-4 py-3">{{ Number(saler.kasbon).toLocaleString('id-ID') }}</td>
+                                        <td class="px-4 py-3">{{ Number(saler.bongkar).toLocaleString('id-ID') }}</td>
+                                        <td class="px-4 py-3">{{ saler.titip ? saler.titip : '-' }}</td>
+                                        <td class="px-4 py-3">{{ Number(saler.piutang).toLocaleString('id-ID') }}</td>
+                                        <td class="px-4 py-3" :class="saler.status == 'Lunas' ? 'text-emerald-500' : 'text-red-500' ">{{ saler.status }}</td>
                                         <td class="px-4 py-3 flex items-center justify-end">
                                             <button @click.stop="menu = menu === index ? null : index" class="inline-flex items-center text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 p-1.5 dark:hover-bg-gray-800 text-center text-gray-500 hover:text-gray-800 rounded-lg focus:outline-none" type="button">
                                                 <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -549,7 +589,7 @@ function formatDate(dateString) {
                                 </template>
                                 <template v-else>
                                     <tr>
-                                        <td colspan="6" class="text-center">Data penjualan tidak ada</td>
+                                        <td colspan="11" class="text-center">Data penjualan tidak ada</td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -561,119 +601,148 @@ function formatDate(dateString) {
 
             <!-- Create modal -->
             <div v-if="openModalCreate" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-2xl max-h-full">
+                <div class="relative p-4 w-full max-w-md max-h-full">
                     <!-- Modal content -->
                     <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
                         <!-- Modal header -->
-                        <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Sale</h3>
-                            <button type="button" @click="openModalCreate = false; reset; getsalers()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
-                                <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                                <span class="sr-only">Close modal</span>
-                            </button>
-                        </div>
+                         <div class="border-b pb-3 mb-4">
+                            <div class="flex justify-between items-center pb-1 rounded-t sm:mb-5 dark:border-gray-600">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Penjualan</h3>
+                                <button type="button" @click="openModalCreate = false; reset; getsalers()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
+                                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="sr-only">Close modal</span>
+                                </button>
+                            </div>
+                            <div>
+                                <button type="button" class="max-w-max inline-block text-sm text-slate-900" @click="tabcreate = 'form'" :class="tabcreate == 'form' ? 'opacity-100' : 'opacity-50'">Penjualan</button>
+                                <span class="text-sm mx-1 transition-all duration-500">{{ tabcreate == 'form' ? '>>' : '<<' }}</span>
+                                <button type="button" class="max-w-max inline-block text-sm text-slate-900" @click="tabcreate = 'titip'" :class="tabcreate == 'titip' ? 'opacity-100' : 'opacity-50'">Titip</button>
+                            </div>
+                         </div>
                         <!-- Modal body -->
                         <form @submit.prevent="create">
-                            <div class="grid gap-4 mb-4">
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Customer</label>
+                            <div v-if="tabcreate == 'form'" class="grid gap-4 mb-4">
+                                <div>
+                                    <div class="relative">
+                                        <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Tanggal</label>
+                                        <input ref="createtonase" @keydown.enter.prevent="createtonasegp.focus()" @input="formatTonase" v-model="form.tanggal" type="date" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                                     </div>
-                                    <div class="col-span-2">
-                                        <vSelect
-                                            ref="createcustomer"
-                                            @option:selected="createtonase.focus()"
-                                            v-model="form.customer"
-                                            :options="customers"
-                                            label="nama_depan"
-                                            :reduce="c => c.id"
-                                            :open-on-focus="false"
-                                            :dropdownShouldOpen="dropdownCustomer"
-                                            @mousedown="customerUserClick = true"
-                                            @close="customerUserClick = false"
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        >
-                                            <template #no-options>
-                                                <div class="text-sm p-2">
-                                                    <button
-                                                        type="button"
-                                                        class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
-                                                        @click="handleopencustomer"
-                                                    >
-                                                        + Tambah Customer
-                                                    </button>
-                                                </div>
-                                            </template>
-                                        </vSelect>
-                                    </div>
+                                    <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
                                 </div>
-                                <div class="grid grid-cols-3">
+                                <div class="relative">
+                                    <vSelect
+                                        ref="createcustomer"
+                                        @option:selected="createtonase.focus()"
+                                        v-model="form.customer"
+                                        :options="customers"
+                                        label="nama_depan"
+                                        :reduce="c => c.id"
+                                        :open-on-focus="false"
+                                        :dropdownShouldOpen="dropdownCustomer"
+                                        @mousedown="customerUserClick = true"
+                                        @close="customerUserClick = false"
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                    >
+                                        <template #no-options>
+                                            <div class="text-sm p-2">
+                                                <button
+                                                    type="button"
+                                                    class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
+                                                    @click="handleopencustomer"
+                                                >
+                                                    + Tambah Customer
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </vSelect>
+                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Nama Customer</label>
+                                </div>
+                                <div class="grid grid-cols-2 gap-x-4">
                                     <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tonase Normal</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="createtonase" @keydown.enter.prevent="createtonasegp.focus()" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Tonase">
+                                        <div class="relative">
+                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Tonase NR</label>
+                                            <input ref="createtonase" @keydown.enter.prevent="createtonasegp.focus()" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                        </div>
                                         <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
                                     </div>
-                                </div>
-                                <div class="grid grid-cols-3">
                                     <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tonase GP</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="createtonasegp" @keydown.enter.prevent="createharga.focus()" @input="formatTonaseGP" v-model="form.tonasegp" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Tonase GP">
-                                        <p v-if="err.tonasegp" class="text-xs text-red-400">{{ err.tonasegp[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga Normal</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="createharga" @keydown.enter.prevent="createhargagp.focus()" @input="formatHarga" v-model="form.harga" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Harga">
+                                        <div class="relative">
+                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Harga NR</label>
+                                            <input ref="createharga" @keydown.enter.prevent="createhargagp.focus()" @input="formatHarga" v-model="form.harga" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                        </div>
                                         <p v-if="err.harga" class="text-xs text-red-400">{{ err.harga[0] }}</p>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-3">
+                                <div class="grid grid-cols-2 gap-x-4">
                                     <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga GP</label>
+                                        <div class="relative">
+                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Tonase GP</label>
+                                            <input ref="createtonasegp" @keydown.enter.prevent="createharga.focus()" @input="formatTonaseGP" v-model="form.tonasegp" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                        </div>
+                                        <p v-if="err.tonasegp" class="text-xs text-red-400">{{ err.tonasegp[0] }}</p>
                                     </div>
-                                    <div class="col-span-2">
-                                        <input ref="createhargagp" @keydown.enter.prevent="createmati.focus()" @input="formatHargaGP" v-model="form.hargagp" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Harga GP">
+                                    <div>
+                                        <div class="relative">
+                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Harga GP</label>
+                                            <input ref="createhargagp" @keydown.enter.prevent="createmati.focus()" @input="formatHargaGP" v-model="form.hargagp" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                        </div>
                                         <p v-if="err.hargagp" class="text-xs text-red-400">{{ err.hargagp[0] }}</p>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Potong Mati</label>
+                                <div>
+                                    <div class="relative">
+                                        <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Potong Mati</label>
+                                        <input ref="createmati" @keydown.enter.prevent="createkasbon.focus()" @input="formatMati" v-model="form.mati" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                                     </div>
-                                    <div class="col-span-2">
-                                        <input ref="createmati" @keydown.enter.prevent="createkasbon.focus()" @input="formatMati" v-model="form.mati" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Mati">
-                                        <p v-if="err.mati" class="text-xs text-red-400">{{ err.mati[0] }}</p>
-                                    </div>
+                                    <p v-if="err.mati" class="text-xs text-red-400">{{ err.mati[0] }}</p>
                                 </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Kasbon</label>
+                                <div>
+                                    <div class="relative">
+                                        <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Kasbon</label>
+                                        <input ref="createkasbon" @keydown.enter.prevent="createbongkar.focus()" @input="formatKasbon" v-model="form.kasbon" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                                     </div>
-                                    <div class="col-span-2">
-                                        <input ref="createkasbon" @keydown.enter.prevent="createbongkar.focus()" @input="formatKasbon" v-model="form.kasbon" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Kasbon">
-                                        <p v-if="err.kasbon" class="text-xs text-red-400">{{ err.kasbon[0] }}</p>
-                                    </div>
+                                    <p v-if="err.kasbon" class="text-xs text-red-400">{{ err.kasbon[0] }}</p>
                                 </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Bongkar</label>
+                                <div>
+                                    <div class="relative">
+                                        <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Bongkar</label>
+                                        <input ref="createbongkar" @keydown.enter.prevent="create" @input="formatBongkar" v-model="form.bongkar" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                                     </div>
-                                    <div class="col-span-2">
-                                        <input ref="createbongkar" @keydown.enter.prevent="create" @input="formatBongkar" v-model="form.bongkar" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Bongkar">
-                                        <p v-if="err.bongkar" class="text-xs text-red-400">{{ err.bongkar[0] }}</p>
+                                    <p v-if="err.bongkar" class="text-xs text-red-400">{{ err.bongkar[0] }}</p>
+                                </div>
+                            </div>
+                            <div v-else class="pb-4 border-b">
+                                <button type="button" @click="handleaddtitipan" class="px-3 py-2 mb-3 rounded-lg bg-sky-400 text-white hover:bg-sky-500 active:ring-1 active:ring-sky-300">Tambah titipan</button>
+                                <div v-if="form.titip.length > 0" class="mt-2">
+                                    <div v-for="(titip, index) in form.titip" :key="index" class=" my-4">
+                                        <div class="grid grid-cols-2 gap-x-4">
+                                            <div>
+                                                <div class="relative">
+                                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Titip {{ index + 1 }}
+                                                        <!-- <button @click="handledroptitipan(index)" type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
+                                                            <svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                            </svg>
+                                                            <span class="sr-only">Close modal</span>
+                                                        </button> -->
+                                                    </label>
+                                                </div>
+                                                <input @input="(e) => formatTitip(e, index)" v-model="form.titip[index].nominal" type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                            </div>
+                                            <div>
+                                                <div class="relative">
+                                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Tanggal</label>
+                                                    <input type="date" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                                </div>
+                                                <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-x-5">
+                            <div class="grid grid-cols-2 gap-x-5 mt-4">
                                 <div>
                                     <button type="submit" :disabled="isloadcreate" :class="isloadcreate ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                                         <svg class="mr-1 -ml-1 w-6 h-6" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -682,9 +751,9 @@ function formatDate(dateString) {
                                         {{ isloadcreate ? 'Menambah' : 'Tambah baru' }}
                                     </button>
                                 </div>
-                                <div>
+                                <!-- <div>
                                     Rp. {{ jumlah ? jumlah.toLocaleString('id-ID') : '-' }}
-                                </div>
+                                </div> -->
                             </div>
                         </form>
                     </div>
@@ -696,18 +765,25 @@ function formatDate(dateString) {
                     <!-- Modal content -->
                     <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
                         <!-- Modal header -->
-                        <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Update Product</h3>
-                            <button type="button" @click.stop="openModalUpdate = false; reset" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="updateProductModal">
-                                <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                                <span class="sr-only">Close modal</span>
-                            </button>
-                        </div>
+                         <div class="border-b pb-3 mb-4">
+                            <div class="flex justify-between items-center pb-1 rounded-t sm:mb-5 dark:border-gray-600">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Update Product</h3>
+                                <button type="button" @click.stop="openModalUpdate = false; reset" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="updateProductModal">
+                                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="sr-only">Close modal</span>
+                                </button>
+                            </div>
+                            <div>
+                                <button type="button" class="max-w-max inline-block text-sm text-slate-900" @click="tabcreate = 'form'" :class="tabcreate == 'form' ? 'opacity-100' : 'opacity-50'">Penjualan</button>
+                                <span class="text-sm mx-1 transition-all duration-500">{{ tabcreate == 'form' ? '>>' : '<<' }}</span>
+                                <button type="button" class="max-w-max inline-block text-sm text-slate-900" @click="tabcreate = 'titip'" :class="tabcreate == 'titip' ? 'opacity-100' : 'opacity-50'">Titip</button>
+                            </div>
+                         </div>
                         <!-- Modal body -->
                         <form @submit.prevent="edit">
-                            <div class="grid gap-4 mb-4">
+                            <div v-if="tabcreate == 'form'" class="grid gap-4 mb-4">
                                 <div class="grid grid-cols-3">
                                     <div>
                                         <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Customer</label>
@@ -822,6 +898,26 @@ function formatDate(dateString) {
                                     </div>
                                 </div>
                             </div>
+                            <div v-else class="pb-4 border-b">
+                                <button type="button" @click="handleaddtitipan" class="px-3 py-2 rounded-lg bg-sky-400 text-white hover:bg-sky-500 active:ring-1 active:ring-sky-300">Tambah titipan</button>
+                                <div v-if="form.titip.length > 0" class="mt-2">
+                                    <div v-for="(titip, index) in form.titip" :key="index" class="grid grid-cols-3 my-2">
+                                        <div class="flex items-center">
+                                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Titip {{ index + 1 }}</label>
+                                            <button @click="handledroptitipan(index)" type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-0.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
+                                                <svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                </svg>
+                                                <span class="sr-only">Close modal</span>
+                                            </button>
+                                        </div>
+                                        <div class="col-span-2">
+                                            <input @input="(e) => formatTitip(e, index)" v-model="form.titip[index].nominal" type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                            <p class="text-xs text-red-400">nominal tidak boleh 0</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="grid grid-cols-2 gap-x-5">
                                 <div>
                                     <button type="submit" :disabled="isloadedit" :class="isloadedit ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
@@ -842,12 +938,10 @@ function formatDate(dateString) {
             <!-- Read modal -->
             <div v-if="openModalPreview" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-40 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
                 <div class="relative p-4 w-full max-w-xl max-h-full">
-                    <!-- Modal content -->
                     <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <!-- Modal header -->
                         <div class="flex justify-between mb-4 rounded-t sm:mb-5">
                             <div class="text-lg text-gray-900 md:text-xl dark:text-white">
-                                <h3 class="font-semibold ">Detail Pembelian</h3>
+                                <h3 class="font-semibold ">Detail Penjualan</h3>
                             </div>
                             <div>
                                 <button type="button" @click.stop="openModalPreview = false" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 inline-flex dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="readProductModal">
@@ -858,7 +952,7 @@ function formatDate(dateString) {
                                 </button>
                             </div>
                         </div>
-                        <div class="grid gap-4 mb-4 sm:grid-cols-2">
+                        <!-- <div class="grid gap-4 mb-4 sm:grid-cols-2">
                             <div>
                                 <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Vendor</label>
                                 <div>
@@ -884,7 +978,7 @@ function formatDate(dateString) {
                         </div>
                         <div>
                             Rp. {{ Number(purchas.jumlah).toLocaleString('id-ID') }}
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>

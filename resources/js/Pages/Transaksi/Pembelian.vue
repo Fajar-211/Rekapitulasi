@@ -19,6 +19,8 @@ const isloadcreate = ref(false);
 const isloadedit = ref(false);
 const isloadshow = ref(false);
 
+const vendorSearch = ref('');
+const triggerSearch = ref(false);
 const createvendor = ref(null)
 const createdriver = ref(null)
 const createharga = ref(null);
@@ -364,8 +366,29 @@ watch(openModalCreate, async (val) => {
     }
 })
 function dropdownVendor() {
-    return vendorUserClick.value
+    return triggerSearch.value
 }
+function handleEnterVendor() {
+    const results = vendors.value.filter(v =>
+        v.nama.toLowerCase().includes(vendorSearch.value.toLowerCase())
+    )
+
+    if (results.length > 0) {
+        form.value.vendor = results[0] // ✅ object
+        triggerSearch.value = false
+        vendorSearch.value = ''
+        focusCreateDriver()
+    } else {
+        triggerSearch.value = true
+    }
+}
+const finalVendors = computed(() => {
+    if (!triggerSearch.value) return []
+
+    return vendors.value.filter(v =>
+        v.nama.toLowerCase().includes(vendorSearch.value.toLowerCase())
+    )
+})
 const driverUserClick = ref(false)
 async function focusCreateDriver() {
     await nextTick()
@@ -407,20 +430,13 @@ function formatHarga(e) {
     }
     form.value.harga = Number(value).toLocaleString('id-ID')
 }
-function formatTonase(e) {
-    let value = e.target.value
+function formatTonaseView(value) {
+    if (value === null || value === undefined) return ''
 
-    // hanya izinkan angka dan koma
-    value = value.replace(/[^\d,]/g, '')
-
-    // pisah integer dan decimal
-    let parts = value.split(',')
-
-    // format ribuan di bagian depan
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-
-    // gabungkan lagi
-    form.value.tonase = parts.join(',')
+    return new Intl.NumberFormat('id-ID', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(value)
 }
 function parseNumber(value) {
     if (!value) return null
@@ -430,6 +446,21 @@ function parseNumber(value) {
             .replace(',', '.')   // ubah koma jadi titik
     )
 }
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    })
+}
+
+const filteredVendors = computed(() => {
+    if (!vendorSearch.value) return vendors.value
+
+    return vendors.value.filter(v =>
+        v.nama.toLowerCase().includes(vendorSearch.value.toLowerCase())
+    )
+})
 </script>
 
 <template>
@@ -437,32 +468,6 @@ function parseNumber(value) {
     <AuthenticatedLayout>
         <Loading v-if="isloading" />
         <div v-else class="py-12">
-            <div class="mx-auto max-w-7xl px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 md:gap-8 lg:gap-11">
-                <div
-                    class="overflow-hidden bg-emerald-200 shadow-lg rounded-lg hover:cursor-pointer hover:scale-110 transition-all duration-1000 delay-150 group"
-                >
-                    <div class="p-6 text-slate-900 group-hover:text-slate-100 group-hover:transition-colors group-hover:duration-500">
-                        Total Pembayaran 💵
-                    </div>
-                    <p class="text-2xl sm:text-3xl font-semibold text-slate-100 px-6 py-3 group-hover:text-slate-900 group-hover:transition-colors group-hover:duration-1000">Rp.2000</p>
-                </div>
-                <div
-                    class="overflow-hidden bg-teal-200 shadow-lg rounded-lg hover:cursor-pointer hover:scale-110 transition-all duration-1000 delay-150 group"
-                >
-                    <div class="p-6 text-white group-hover:text-slate-100 group-hover:transition-colors group-hover:duration-500">
-                        Total harga 💲
-                    </div>
-                    <p class="text-2xl sm:text-3xl font-semibold text-slate-100 px-6 py-3 group-hover:text-white group-hover:transition-colors group-hover:duration-1000">Rp.2000</p>
-                </div>
-                <div
-                    class="overflow-hidden bg-amber-300 shadow-lg rounded-lg hover:cursor-pointer hover:scale-110 transition-all duration-1000 delay-150 group"
-                >
-                    <div class="p-6 text-slate-400 group-hover:text-slate-100 group-hover:transition-colors group-hover:duration-500">
-                        Total Tonase 💰
-                    </div>
-                    <p class="text-2xl sm:text-3xl font-semibold text-slate-100 px-6 py-3 group-hover:text-slate-400 group-hover:transition-colors group-hover:duration-1000">Rp.2000</p>
-                </div>
-            </div>
             <div class="mx-auto max-w-screen-xl px-4 lg:px-12 mt-10">
                 <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
                     <div class="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 p-4">
@@ -493,12 +498,13 @@ function parseNumber(value) {
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
                                     <th scope="col" class="px-4 py-4">#</th>
-                                    <th scope="col" class="px-4 py-3">Vendor</th>
-                                    <th scope="col" class="px-4 py-3">Driver</th>
-                                    <th scope="col" class="px-4 py-3">Tonase</th>
-                                    <th scope="col" class="px-4 py-3">Harga</th>
-                                    <th scope="col" class="px-4 py-3">Jumlah</th>
-                                    <th scope="col" class="px-4 py-3">Status</th>
+                                    <th scope="col" class="px-4 py-3">TANGGAL</th>
+                                    <th scope="col" class="px-4 py-3">VENDOR</th>
+                                    <th scope="col" class="px-4 py-3">SOPIR</th>
+                                    <th scope="col" class="px-4 py-3">TONASE</th>
+                                    <th scope="col" class="px-4 py-3">HARGA</th>
+                                    <th scope="col" class="px-4 py-3">JUMLAH</th>
+                                    <th scope="col" class="px-4 py-3">STATUS</th>
                                     <th scope="col" class="px-4 py-3">
                                         <span class="sr-only">Actions</span>
                                     </th>
@@ -508,11 +514,12 @@ function parseNumber(value) {
                                 <template v-if="purchases.length > 0">
                                     <tr v-for="(purchase, index) in purchases" :key="index" class="border-b dark:border-gray-700">
                                         <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ paginate.from + index }}</th>
+                                        <td class="px-4 py-3">{{ formatDate(purchase.created_at) }}</td>
                                         <td class="px-4 py-3">{{ purchase.vendor.nama }}</td>
                                         <td class="px-4 py-3">{{ purchase.driver.nama }}</td>
-                                        <td class="px-4 py-3">{{ Number(purchase.tonase).toLocaleString('id-ID') }}</td>
+                                        <td class="px-4 py-3">{{ formatTonaseView(Number(purchase.tonase)) }}</td>
                                         <td class="px-4 py-3">{{ Number(purchase.harga).toLocaleString('id-ID') }}</td>
-                                        <td class="px-4 py-3">Rp. {{ Number(purchase.jumlah).toLocaleString('id-ID') }}</td>
+                                        <td class="px-4 py-3">{{ Number(purchase.jumlah).toLocaleString('id-ID') }}</td>
                                         <td class="px-4 py-3" :class="purchase.status.status == 'Lunas' ? 'text-emerald-500' : 'text-red-500' ">{{ purchase.status.status }}</td>
                                         <td class="px-4 py-3 flex items-center justify-end">
                                             <button @click.stop="menu = menu === index ? null : index" class="inline-flex items-center text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 p-1.5 dark:hover-bg-gray-800 text-center text-gray-500 hover:text-gray-800 rounded-lg focus:outline-none" type="button">
@@ -567,12 +574,12 @@ function parseNumber(value) {
 
             <!-- Create modal -->
             <div v-if="openModalCreate" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-2xl max-h-full">
+                <div class="relative p-4 w-full max-w-md max-h-full">
                     <!-- Modal content -->
                     <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
                         <!-- Modal header -->
                         <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Purchase</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pembelian</h3>
                             <button type="button" @click="openModalCreate = false; reset; getpurchases()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
                                 <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -582,27 +589,29 @@ function parseNumber(value) {
                         </div>
                         <!-- Modal body -->
                         <form @submit.prevent="create">
-                            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-                                <div>
-                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Vendor</label>
+                            <div class="grid gap-5 mb-4 grid-cols-1">
+                                <div class="relative">
                                     <!-- <input ref="createfirstNameInput" @keydown.enter.prevent="createlastNameInput.focus()" v-model="form.nama" type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nama depan"> -->
                                     <!-- <p v-if="err.nama" class="text-xs text-red-400">{{ err.nama[0] }}</p> -->
                                     <vSelect
                                         ref="createvendor"
-                                        @option:selected="focusCreateDriver"
                                         v-model="form.vendor"
-                                        :options="vendors"
+                                        :options="finalVendors"
                                         label="nama"
-                                        :reduce="v => v.id"
+                                        :filterable="false"
                                         :open-on-focus="false"
                                         :dropdownShouldOpen="dropdownVendor"
-                                        @mousedown="vendorUserClick = true"
-                                        @close="vendorUserClick = false"
+                                        @search="val => {
+                                            vendorSearch = val
+                                            triggerSearch = false
+                                        }"
+                                        @keydown.enter.prevent="handleEnterVendor"
                                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                     >
                                         <template #no-options>
                                             <div class="text-sm p-2">
                                                 <button
+                                                    v-if="triggerSearch && vendorSearch"
                                                     type="button"
                                                     class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
                                                     @click="handleopenvendor"
@@ -612,9 +621,9 @@ function parseNumber(value) {
                                             </div>
                                         </template>
                                     </vSelect>
+                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Nama Vendor</label>
                                 </div>
-                                <div>
-                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Driver</label>
+                                <div class="relative">
                                     <vSelect
                                         ref="createdriver"
                                         @option:selected="focusCreateTonase"
@@ -640,16 +649,107 @@ function parseNumber(value) {
                                             </div>
                                         </template>
                                     </vSelect>
+                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Nama Driver</label>
                                 </div>
-                                <div>
-                                    <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tonase</label>
-                                    <input ref="createtonase" @keydown.enter.prevent="createharga.focus" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
-                                    <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
+                                <div class="grid grid-cols-2 gap-x-3">
+                                    <div>
+                                        <div class="relative">
+                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Size</label>
+                                            <input ref="createtonase" @keydown.enter.prevent="createharga.focus" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
+                                        </div>
+                                        <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga</label>
-                                    <input ref="createharga" @keydown.enter.prevent="create" @input="formatHarga" v-model="form.harga" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
-                                    <p v-if="err.harga" class="text-xs text-red-400">{{ err.harga[0] }}</p>
+                                <div class="grid grid-cols-2 gap-x-3">
+                                    <div>
+                                        <div class="relative">
+                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Tonase</label>
+                                            <input ref="createtonase" @keydown.enter.prevent="createharga.focus" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
+                                        </div>
+                                        <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
+                                    </div>
+                                    <div>
+                                        <div class="relative">
+                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Harga</label>
+                                            <input ref="createharga" @keydown.enter.prevent="create" @input="formatHarga" v-model="form.harga" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
+                                        </div>
+                                        <p v-if="err.harga" class="text-xs text-red-400">{{ err.harga[0] }}</p>
+                                    </div>
+                                </div>
+                                <div class="relative">
+                                    <vSelect
+                                        ref="createvendorkkl"
+                                        @option:selected="focusCreateDriver"
+                                        v-model="form.vendor"
+                                        :options="vendors"
+                                        label="nama"
+                                        :reduce="v => v.id"
+                                        :open-on-focus="false"
+                                        :dropdownShouldOpen="dropdownVendor"
+                                        @mousedown="vendorUserClick = true"
+                                        @close="vendorUserClick = false"
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                    >
+                                        <template #no-options>
+                                            <div class="text-sm p-2">
+                                                <button
+                                                    type="button"
+                                                    class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
+                                                    @click="handleopenvendor"
+                                                >
+                                                    + Tambah Vendor
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </vSelect>
+                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Status</label>
+                                </div>
+                                <div class="relative">
+                                    <vSelect
+                                        ref="createvendornlkj"
+                                        @option:selected="focusCreateDriver"
+                                        v-model="form.vendor"
+                                        :options="vendors"
+                                        label="nama"
+                                        :reduce="v => v.id"
+                                        :open-on-focus="false"
+                                        :dropdownShouldOpen="dropdownVendor"
+                                        @mousedown="vendorUserClick = true"
+                                        @close="vendorUserClick = false"
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                    >
+                                        <template #no-options>
+                                            <div class="text-sm p-2">
+                                                <button
+                                                    type="button"
+                                                    class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
+                                                    @click="handleopenvendor"
+                                                >
+                                                    + Tambah Vendor
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </vSelect>
+                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Cara Bayar</label>
+                                </div>
+                                <div class="grid grid-cols-2">
+                                    <div>
+                                        <div class="relative">
+                                            <input ref="createtonase" @keydown.enter.prevent="createharga.focus" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
+                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Klaim mati</label>
+                                        </div>
+                                        <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
+                                    </div>
+                                    
+                                </div>
+                                <div class="grid grid-cols-2">
+                                    <div>
+                                        <div class="relative">
+                                            <input ref="createharga" @keydown.enter.prevent="create" @input="formatHarga" v-model="form.harga" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
+                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Kompenssasi</label>
+                                        </div>
+                                        <p v-if="err.harga" class="text-xs text-red-400">{{ err.harga[0] }}</p>
+                                    </div>
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-x-5">
@@ -661,9 +761,9 @@ function parseNumber(value) {
                                         {{ isloadcreate ? 'Menambah' : 'Tambah baru' }}
                                     </button>
                                 </div>
-                                <div>
+                                <!-- <div>
                                     Rp. {{ jumlah ? jumlah.toLocaleString('id-ID') : '-' }}
-                                </div>
+                                </div> -->
                             </div>
                         </form>
                     </div>

@@ -2,12 +2,17 @@
 
 use App\Http\Controllers\api\CustomerController;
 use App\Http\Controllers\api\DriverController;
+use App\Http\Controllers\api\MethodeController;
+use App\Http\Controllers\api\OperasionalController;
 use App\Http\Controllers\api\PurchaseController;
+use App\Http\Controllers\api\RekapitulasiController;
 use App\Http\Controllers\api\SalerController;
+use App\Http\Controllers\api\TypeOperasionalController;
 use App\Http\Controllers\api\VendorController;
 use App\Models\Purchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -28,6 +33,16 @@ Route::middleware(['auth:sanctum'])->prefix('master')->group(function () {
     Route::post('/vendor', [VendorController::class, 'store']);
     Route::patch('/vendor/{id}', [VendorController::class, 'update']);
     Route::delete('/vendors/{id}', [VendorController::class, 'destroy']);
+
+    Route::get('/types', [TypeOperasionalController::class, 'index']);
+    Route::post('/type', [TypeOperasionalController::class, 'store']);
+    Route::patch('/type/{id}', [TypeOperasionalController::class, 'update']);
+    Route::delete('/types/{id}', [TypeOperasionalController::class, 'destroy']);
+
+    Route::get('/methods', [MethodeController::class, 'index']);
+    Route::post('/methode', [MethodeController::class, 'store']);
+    Route::patch('/methode', [MethodeController::class, 'update']);
+    Route::delete('/methode/{id}', [MethodeController::class, 'destroy']);
 });
 Route::middleware(['auth:sanctum'])->prefix('transaksi')->group(function () {
     Route::get('/purchases', [PurchaseController::class, 'index']);
@@ -41,4 +56,14 @@ Route::middleware(['auth:sanctum'])->prefix('transaksi')->group(function () {
     Route::post('/saler', [SalerController::class, 'store']);
     Route::patch('/saler/{id}', [SalerController::class, 'update']);
     Route::delete('/saler/{id}', [SalerController::class, 'destroy']);
+
+    Route::get('/operasionals', [OperasionalController::class, 'index']);
+    Route::get('/operasional/{id}', [OperasionalController::class, 'show']);
+    Route::post('/operasional', [OperasionalController::class, 'store']);
+    Route::patch('/operasional/{id}', [OperasionalController::class, 'update']);
+    Route::delete('/operasional/{id}', [OperasionalController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum'])->prefix('rekapitulasi')->group(function () {
+    Route::get('/rekapitulasi', [RekapitulasiController::class, 'index']);
 });

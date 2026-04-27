@@ -28,6 +28,7 @@ return new class extends Migration
             $table->decimal('kasbon', 15, 2)->nullable();
             $table->decimal('bongkar', 15, 2)->nullable();
             $table->decimal('mati', 15, 2);
+            $table->decimal('piutang', 15, 2)->nullable();
             $table->decimal('jumlah', 15, 2);
             $table->timestamps();
         });

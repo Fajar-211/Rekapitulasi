@@ -15,10 +15,14 @@ class RouteController extends Controller
     {
         return Inertia::render('Transaksi/Pembelian');
     }
+    public function operasional()
+    {
+        return Inertia::render('Transaksi/Operasional');
+    }
 
     public function rekapitulasi()
     {
-        return Inertia::render('Rekapitulasi');
+        return Inertia::render('Rekapitulasi/Rekapitulasi');
     }
 
     public function customer()
@@ -32,5 +36,9 @@ class RouteController extends Controller
     public function driver()
     {
         return Inertia::render('Master/Driver');
+    }
+    public function pembayaran()
+    {
+        return Inertia::render('Master/Pembayaran');
     }
 }

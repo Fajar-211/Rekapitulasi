@@ -61,6 +61,11 @@ const showingNavigationDropdown = ref(false);
                                     >
                                     🏪 Penjualan
                                     </DropdownLink>
+                                    <DropdownLink
+                                        :href="route('operasional')"
+                                    >
+                                    🏢 Operasional
+                                    </DropdownLink>
                                 </ul>
                             </Transition>
                         </li>
@@ -72,15 +77,11 @@ const showingNavigationDropdown = ref(false);
                             </button>
                             <Transition name="slide">
                                 <ul v-show="openRekap" class="py-2 space-y-2">
-                                    <li>
-                                        <a href="#" class="flex items-center p-2 pl-11 w-full text-base font-normal text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Products</a>
-                                    </li>
-                                    <li>
-                                        <a href="#" class="flex items-center p-2 pl-11 w-full text-base font-normal text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Billing</a>
-                                    </li>
-                                    <li>
-                                        <a href="#" class="flex items-center p-2 pl-11 w-full text-base font-normal text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Invoice</a>
-                                    </li>
+                                    <DropdownLink
+                                        :href="route('rekapitulasi')"
+                                    >
+                                    📶 Rekapitulasi
+                                    </DropdownLink>
                                 </ul>
                             </Transition>
                         </li>
@@ -106,6 +107,11 @@ const showingNavigationDropdown = ref(false);
                                         :href="route('vendor')"
                                     >
                                     🏭 Vendor
+                                    </DropdownLink>
+                                    <DropdownLink
+                                        :href="route('pembayaran')"
+                                    >
+                                    🪙 Cara pembayaran
                                     </DropdownLink>
                                 </ul>
                             </Transition>
@@ -135,14 +141,14 @@ const showingNavigationDropdown = ref(false);
             
             <div class="w-full">
                 <!-- Page Heading -->
-                <header
+                <!-- <header
                     class="bg-[linear-gradient(110deg,_#a855f7,_#ec4899,_#a855f7)] bg-[length:200%_200%] animate-gradientMove transition-all duration-1000 shadow md:mx-4 lg:mx-8 xl:mx-12 md:my-5 rounded-lg"
                     v-if="$slots.header"
                 >
                     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                         <slot name="header" />
                     </div>
-                </header>
+                </header> -->
 
                 <!-- Page Content -->
                 <main>

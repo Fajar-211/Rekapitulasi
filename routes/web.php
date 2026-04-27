@@ -15,21 +15,22 @@ Route::get('/', function () {
     ]);
 });
 
-// Route::get('/dashboard', function () {
-//     return Inertia::render('Dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->prefix('transaksi')->group(function () {
     Route::get('/penjualan', [RouteController::class, 'penjualan'])->name('penjualan');
     Route::get('/pembelian', [RouteController::class, 'pembelian'])->name('pembelian');
+    Route::get('/operasional', [RouteController::class, 'operasional'])->name('operasional');
 });
-// Route::middleware(['auth', 'verified'])->prefix('rekapitulasi')->group(function () {
-//     Route::get('/rekapitulasi', [RouteController::class, 'rekapitulasi'])->name('rekapitulasi');
-// });
+
+Route::middleware(['auth', 'verified'])->prefix('rekapitulasi')->group(function () {
+    Route::get('/rekapitulasi', [RouteController::class, 'rekapitulasi'])->name('rekapitulasi');
+});
+
 Route::middleware(['auth', 'verified'])->prefix('master')->group(function () {
     Route::get('/customer', [RouteController::class, 'customer'])->name('customer');
     Route::get('/vendor', [RouteController::class, 'vendor'])->name('vendor');
     Route::get('/driver', [RouteController::class, 'driver'])->name('driver');
+    Route::get('/pembayaran', [RouteController::class, 'pembayaran'])->name('pembayaran');
 });
 
 Route::middleware('auth')->group(function () {
