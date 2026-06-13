@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Titip extends Model
 {
-    protected $fillable = ['saler_id', 'nomor', 'nominal'];
+    protected $fillable = ['saler_id', 'tanggal', 'nominal'];
 
     public function saler(): BelongsTo
     {

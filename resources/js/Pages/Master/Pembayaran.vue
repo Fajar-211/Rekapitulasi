@@ -64,12 +64,21 @@ async function create() {
         createNameInput.value?.focus()
     }catch(error){
         err.value = error.response.data.errors;
-        Swal.fire({
-            title: error.response.status,
-            text: error.response.data.message,
-            icon: 'error',
-            confirmButtonText: 'Coba lagi'
-        })
+        if(error?.response?.status === 422){
+            Swal.fire({
+                title: error.response.status,
+                text: 'Cara pembayaran sudah ada',
+                icon: 'error',
+                confirmButtonText: 'Coba lagi'
+            })
+        }else{
+            Swal.fire({
+                title: error.response.status,
+                text: error.response.data.message,
+                icon: 'error',
+                confirmButtonText: 'Coba lagi'
+            })
+        }
     }finally{
         isloadcreate.value = false
     }

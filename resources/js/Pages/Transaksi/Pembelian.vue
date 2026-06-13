@@ -1,6 +1,7 @@
 <script setup>
 import Loading from '@/Components/Loading.vue';
 import Paginate from '@/Components/Paginate.vue';
+import create from '@/Components/pembelian/create.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -10,43 +11,54 @@ import vSelect from "vue-select"
 import "vue-select/dist/vue-select.css"
 import { useCurrencyInput } from 'vue-currency-input'
 import { computed } from 'vue';
+import { formatTanggal } from '@/Components/composable/Tanggal.js';
+import Update from '@/Components/pembelian/update.vue';
+import Show from '@/Components/pembelian/show.vue';
+import Delete from '@/Components/pembelian/delete.vue';
+import { tonaseview } from '@/Components/composable/Format.js';
+
+const { date } = formatTanggal();
 
 let timeout = null;
 const menu = ref(null);
 const isloading = ref(false);
 const isloaddelete = ref(false);
-const isloadcreate = ref(false);
 const isloadedit = ref(false);
 const isloadshow = ref(false);
 
-const vendorSearch = ref('');
-const triggerSearch = ref(false);
-const createvendor = ref(null)
-const createdriver = ref(null)
-const createharga = ref(null);
-const createtonase = ref(null);
+const data = ref({
+    id: '',
+    tanggal: '',
+    vendor: {},
+    driver: {},
+    payment: '',
+    status: {},
+    tonase: '',
+    harga: '',
+    size: '',
+    mati: '',
+    kompensasi: ''
+})
 
+//ref edit pembelian
 const editvendor = ref(null)
 const editdriver = ref(null)
-const editharga = ref(null)
-const edittonase = ref(null)
-const editstatus = ref(null)
+const edithargapembelian = ref(null)
+const edittonasepembelian = ref(null)
+const editstatuspembelian = ref(null)
+//ref edit penjualan
+const editcustomer = ref(null)
+const editstatuspenjualan = ref(null)
+const edithargapenjualan = ref(null);
+const edithargagp = ref(null);
+const edittonasepenjualan = ref(null);
+const edittonasegp = ref(null);
+const editkasbon = ref(null);
+const editbongkar = ref(null);
+const editmati = ref(null);
 
 const search = ref('');
-const form = ref({
-    id: '',
-    vendor: '',
-    driver: '',
-    tonase: null,
-    harga: null,
-    status: ''
-})
-const jumlah = computed(() => {
-    const harga = Number(String(form.value.harga).replace(/\./g, ''))
-    const tonase = Number(String(form.value.tonase).replace(/\./g, '').replace(',', '.'))
-    return harga * tonase
-})
-const err = ref({});
+
 
 const purchases = ref([]);
 const purchas = ref({});
@@ -54,14 +66,13 @@ const vendors = ref([]);
 const drivers = ref([]);
 const paginate = ref({});
 const statuses = ref([]);
+const payments = ref([]);
+const customers = ref([]);
 
 const openModalCreate = ref(false);
 const openModalUpdate = ref(false);
 const openModalDelete = ref(false);
 const openModalPreview = ref(false);
-
-const openVendorModal = ref(false);
-const openDriverModal = ref(false);
 
 async function getpurchases(page = 1) {
     try{
@@ -77,6 +88,8 @@ async function getpurchases(page = 1) {
         vendors.value = response.data.vendors;
         drivers.value = response.data.drivers;
         statuses.value = response.data.statuses;
+        payments.value = response.data.payments;
+        customers.value = response.data.customers;
     }catch(error){
         Swal.fire({
             title: error.response.status,
@@ -88,29 +101,7 @@ async function getpurchases(page = 1) {
         isloading.value = false
     }
 }
-async function create() {
-    try{
-        isloadcreate.value = true;
-        form.value.tonase = parseNumber(form.value.tonase);
-        const response = await axios.post('/api/transaksi/purchase', form.value);
-        reset();
-        await nextTick()
-        createvendor.value?.$el.querySelector('input')?.focus()
-        //getcustomers();
-        console.log(response.data);
-    }catch(error){
-        console.log(error);
-        err.value = error.response?.data?.errors ?? {}
-        Swal.fire({
-            title: error.response?.status,
-            text: error.response?.data?.message,
-            icon: 'error',
-            confirmButtonText: 'Coba lagi'
-        })
-    }finally{
-        isloadcreate.value = false
-    }
-}
+
 async function edit() {
     try{
         isloadedit.value = true
@@ -137,34 +128,7 @@ async function edit() {
         isloadedit.value = false
     }
 }
-async function hapus() {
-    try{
-        isloaddelete.value = true
-        const response = await axios.delete(`/api/transaksi/purchase/${form.value.id}`);
-        Swal.fire({
-            title: 'Berhasil!',
-            text: 'Berhasil menghapus pembayaran',
-            icon: 'success',
-            confirmButtonText: 'OK'
-        })
-        openModalDelete.value = false;
-        reset();
-        getpurchases();
-        //console.log(response.data);
-    }catch(error){
-        Swal.fire({
-            title: 'Gagal!',
-            text: `Kode error ${error.response.status}`,
-            icon: 'error',
-            confirmButtonText: 'Coba lagi nanti'
-        })
-        openModalDelete.value = false;
-        reset();
-        //console.log(error.response);
-    }finally{
-        isloaddelete.value = false
-    }
-}
+
 async function show() {
     try{
         isloadshow.value = true;
@@ -196,13 +160,16 @@ function page(page){
 }
 
 function detail(purchase){
-    form.value.id = purchase.id;
-    form.value.vendor = purchase.vendor.id;
-    form.value.driver = purchase.driver.id;
-    form.value.tonase = purchase.tonase;
-    form.value.harga = purchase.harga;
-    form.value.status = purchase.status.id;
-    jumlah.value = purchase.jumlah;
+    data.value.id = purchase.id;
+    data.value.vendor = purchase.vendor;
+    data.value.driver = purchase.driver;
+    data.value.size = purchase.size;
+    data.value.tonase = purchase.tonase;
+    data.value.harga = purchase.harga;
+    data.value.status = purchase.status;
+    data.value.payment = purchase.methode;
+    data.value.mati = purchase.mati;
+    data.value.kompensasi = purchase.kompensasi;
     openModalUpdate.value = true;
 }
 function del(purchase){
@@ -216,127 +183,18 @@ function preview(purchase){
 }
 
 function reset(){
-    form.value.id = '';
-    form.value.vendor = '';
-    form.value.driver = '';
-    form.value.tonase = null;
-    form.value.harga = null;
-    form.value.status = '';
-    form.value.jumlah = null;
-    err.value = {};
+    data.value.id = '';
+    data.value.vendor = {};
+    data.value.driver = {};
+    data.value.size = '';
+    data.value.tonase = '';
+    data.value.harga = '';
+    data.value.status = {};
+    data.value.payment = {};
+    data.value.mati = '';
+    data.value.kompensasi = '';
     purchas.value = [];
 }
-
-//vendor
-const createvendornama = ref(null)
-const createvendoralamat = ref(null);
-async function handleopenvendor(){
-    openVendorModal.value = true;
-    await nextTick()
-    createvendornama.value?.focus();
-}
-function handleclosevendor(){
-    openVendorModal.value = false;
-    resetvendor();
-}
-function resetvendor(){
-    formVendor.value.nama = '';
-    formVendor.value.alamat = '';
-    createvendornama.value = null;
-    createvendoralamat.value = null;
-}
-const formVendor = ref({
-    nama: '',
-    alamat: ''
-})
-const errvendor = ref({});
-const isloadvendor = ref(false);
-async function createvendorform() {
-    try{
-        isloadvendor.value = true;
-        const response = await axios.post('/api/master/vendor', formVendor.value);
-        handleclosevendor()
-        vendors.value.push(response.data.vendor);
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'success',
-            title: 'Berhasil membuat vendor',
-            showConfirmButton: false,
-            timer: 2000
-        })
-        console.log(response.data.vendor)
-        await nextTick()
-        createvendor.value?.$el.querySelector('input')?.focus()
-    }catch(error){
-        console.log(error);
-        errvendor.value = error.response.data?.errors ?? {};
-        Swal.fire({
-            title: error.response.status,
-            text: error.response.data?.message,
-            icon: 'error',
-            confirmButtonText: 'Coba lagi'
-        })
-    }finally{
-        isloadvendor.value = false;
-    }
-}
-
-//driver
-const createdrivernama = ref(null)
-const createdrivertelp = ref(null)
-async function handleopendriver(){
-    openDriverModal.value = true;
-    await nextTick()
-    createdrivernama.value?.focus();
-}
-function handleclosedriver(){
-    openDriverModal.value = false;
-    resetdriver();
-}
-function resetdriver(){
-    formDriver.value.nama = '';
-    formDriver.value.telp = '';
-    createdrivernama.value = null;
-    createdrivertelp.value = null;
-}
-const formDriver = ref({
-    nama: '',
-    telp: ''
-})
-const errdriver = ref({});
-const isloaddriver = ref(false);
-async function createdriverform() {
-    try{
-        isloaddriver.value = true;
-        const response = await axios.post('/api/master/driver', formDriver.value);
-        handleclosedriver()
-        drivers.value.push(response.data.driver);
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'success',
-            title: 'Berhasil membuat driver',
-            showConfirmButton: false,
-            timer: 2000
-        })
-        console.log(response.data.driver)
-        await nextTick()
-        createdriver.value?.$el.querySelector('input')?.focus()
-    }catch(error){
-        console.log(error);
-        errdriver.value = error.response.data?.errors ?? {};
-        Swal.fire({
-            title: error.response.status,
-            text: error.response.data?.message,
-            icon: 'error',
-            confirmButtonText: 'Coba lagi'
-        })
-    }finally{
-        isloaddriver.value = false;
-    }
-}
-
 
 watch(search, (value) => {
     clearTimeout(timeout);
@@ -355,112 +213,17 @@ onMounted(()=>{
     window.addEventListener('click', handleClickOutside);
 });
 
-const vendorUserClick = ref(false)
-watch(openModalCreate, async (val) => {
-    if (val) {
-        reset()
-        err.value = {}
-        vendorUserClick.value = false
-        await nextTick()
-        createvendor.value?.$el.querySelector('input')?.focus()
-    }
-})
-function dropdownVendor() {
-    return triggerSearch.value
-}
-function handleEnterVendor() {
-    const results = vendors.value.filter(v =>
-        v.nama.toLowerCase().includes(vendorSearch.value.toLowerCase())
-    )
 
-    if (results.length > 0) {
-        form.value.vendor = results[0] // ✅ object
-        triggerSearch.value = false
-        vendorSearch.value = ''
-        focusCreateDriver()
-    } else {
-        triggerSearch.value = true
-    }
-}
-const finalVendors = computed(() => {
-    if (!triggerSearch.value) return []
 
-    return vendors.value.filter(v =>
-        v.nama.toLowerCase().includes(vendorSearch.value.toLowerCase())
-    )
-})
-const driverUserClick = ref(false)
-async function focusCreateDriver() {
-    await nextTick()
-    createdriver.value?.$el.querySelector('input')?.focus()
+//emit
+function handleclosecreate(){
+    openModalCreate.value = false;
 }
-function dropdownDriver() {
-    return driverUserClick.value
-}
-async function focusCreateTonase(){
-    await nextTick()
-    createtonase.value?.focus()
+function handlecloseupdate(){
+    openModalUpdate.value = false;
+    reset();
 }
 
-watch(openModalUpdate, async (val) => {
-    if (val) {
-        await nextTick()
-        editvendor.value?.$el.querySelector('input')?.focus()
-    }
-})
-async function focusEditDriver() {
-    await nextTick()
-    editdriver.value?.$el.querySelector('input')?.focus()
-}
-async function focusEditStatus() {
-    await nextTick()
-    editstatus.value?.$el.querySelector('input')?.focus()
-}
-async function focusEditHarga(){
-    await nextTick()
-    editharga.value?.focus()
-}
-
-//format uang dan ref nya
-function formatHarga(e) {
-    let value = e.target.value.replace(/\D/g, '')
-    if (!value) {
-        form.value.harga = ''
-        return
-    }
-    form.value.harga = Number(value).toLocaleString('id-ID')
-}
-function formatTonaseView(value) {
-    if (value === null || value === undefined) return ''
-
-    return new Intl.NumberFormat('id-ID', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(value)
-}
-function parseNumber(value) {
-    if (!value) return null
-    return Number(
-        String(value)
-            .replace(/\./g, '')  // hapus titik ribuan
-            .replace(',', '.')   // ubah koma jadi titik
-    )
-}
-function formatDate(dateString) {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    })
-}
-
-const filteredVendors = computed(() => {
-    if (!vendorSearch.value) return vendors.value
-
-    return vendors.value.filter(v =>
-        v.nama.toLowerCase().includes(vendorSearch.value.toLowerCase())
-    )
-})
 </script>
 
 <template>
@@ -489,7 +252,7 @@ const filteredVendors = computed(() => {
                                 <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                     <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
                                 </svg>
-                                Add Purchase
+                                Tambah Pembelian
                             </button>
                         </div>
                     </div>
@@ -514,10 +277,10 @@ const filteredVendors = computed(() => {
                                 <template v-if="purchases.length > 0">
                                     <tr v-for="(purchase, index) in purchases" :key="index" class="border-b dark:border-gray-700">
                                         <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ paginate.from + index }}</th>
-                                        <td class="px-4 py-3">{{ formatDate(purchase.created_at) }}</td>
+                                        <td class="px-4 py-3">{{ date(purchase.created_at) }}</td>
                                         <td class="px-4 py-3">{{ purchase.vendor.nama }}</td>
                                         <td class="px-4 py-3">{{ purchase.driver.nama }}</td>
-                                        <td class="px-4 py-3">{{ formatTonaseView(Number(purchase.tonase)) }}</td>
+                                        <td class="px-4 py-3">{{ tonaseview(Number(purchase.tonase)) }}</td>
                                         <td class="px-4 py-3">{{ Number(purchase.harga).toLocaleString('id-ID') }}</td>
                                         <td class="px-4 py-3">{{ Number(purchase.jumlah).toLocaleString('id-ID') }}</td>
                                         <td class="px-4 py-3" :class="purchase.status.status == 'Lunas' ? 'text-emerald-500' : 'text-red-500' ">{{ purchase.status.status }}</td>
@@ -572,465 +335,26 @@ const filteredVendors = computed(() => {
                 </div>
             </div>
 
-            <!-- Create modal -->
-            <div v-if="openModalCreate" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-md max-h-full">
-                    <!-- Modal content -->
-                    <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <!-- Modal header -->
-                        <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pembelian</h3>
-                            <button type="button" @click="openModalCreate = false; reset; getpurchases()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
-                                <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                                <span class="sr-only">Close modal</span>
-                            </button>
-                        </div>
-                        <!-- Modal body -->
-                        <form @submit.prevent="create">
-                            <div class="grid gap-5 mb-4 grid-cols-1">
-                                <div class="relative">
-                                    <!-- <input ref="createfirstNameInput" @keydown.enter.prevent="createlastNameInput.focus()" v-model="form.nama" type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nama depan"> -->
-                                    <!-- <p v-if="err.nama" class="text-xs text-red-400">{{ err.nama[0] }}</p> -->
-                                    <vSelect
-                                        ref="createvendor"
-                                        v-model="form.vendor"
-                                        :options="finalVendors"
-                                        label="nama"
-                                        :filterable="false"
-                                        :open-on-focus="false"
-                                        :dropdownShouldOpen="dropdownVendor"
-                                        @search="val => {
-                                            vendorSearch = val
-                                            triggerSearch = false
-                                        }"
-                                        @keydown.enter.prevent="handleEnterVendor"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                    >
-                                        <template #no-options>
-                                            <div class="text-sm p-2">
-                                                <button
-                                                    v-if="triggerSearch && vendorSearch"
-                                                    type="button"
-                                                    class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
-                                                    @click="handleopenvendor"
-                                                >
-                                                    + Tambah Vendor
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </vSelect>
-                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Nama Vendor</label>
-                                </div>
-                                <div class="relative">
-                                    <vSelect
-                                        ref="createdriver"
-                                        @option:selected="focusCreateTonase"
-                                        v-model="form.driver"
-                                        :options="drivers"
-                                        label="nama"
-                                        :reduce="d => d.id"
-                                        :open-on-focus="false"
-                                        :dropdownShouldOpen="dropdownDriver"
-                                        @mousedown="driverUserClick = true"
-                                        @close="driverUserClick = false"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                    >
-                                        <template #no-options>
-                                            <div class="text-sm p-2">
-                                                <button
-                                                    type="button"
-                                                    class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
-                                                    @click="handleopendriver"
-                                                >
-                                                    + Tambah Driver
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </vSelect>
-                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Nama Driver</label>
-                                </div>
-                                <div class="grid grid-cols-2 gap-x-3">
-                                    <div>
-                                        <div class="relative">
-                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Size</label>
-                                            <input ref="createtonase" @keydown.enter.prevent="createharga.focus" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
-                                        </div>
-                                        <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-x-3">
-                                    <div>
-                                        <div class="relative">
-                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Tonase</label>
-                                            <input ref="createtonase" @keydown.enter.prevent="createharga.focus" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
-                                        </div>
-                                        <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
-                                    </div>
-                                    <div>
-                                        <div class="relative">
-                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Harga</label>
-                                            <input ref="createharga" @keydown.enter.prevent="create" @input="formatHarga" v-model="form.harga" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
-                                        </div>
-                                        <p v-if="err.harga" class="text-xs text-red-400">{{ err.harga[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="relative">
-                                    <vSelect
-                                        ref="createvendorkkl"
-                                        @option:selected="focusCreateDriver"
-                                        v-model="form.vendor"
-                                        :options="vendors"
-                                        label="nama"
-                                        :reduce="v => v.id"
-                                        :open-on-focus="false"
-                                        :dropdownShouldOpen="dropdownVendor"
-                                        @mousedown="vendorUserClick = true"
-                                        @close="vendorUserClick = false"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                    >
-                                        <template #no-options>
-                                            <div class="text-sm p-2">
-                                                <button
-                                                    type="button"
-                                                    class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
-                                                    @click="handleopenvendor"
-                                                >
-                                                    + Tambah Vendor
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </vSelect>
-                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Status</label>
-                                </div>
-                                <div class="relative">
-                                    <vSelect
-                                        ref="createvendornlkj"
-                                        @option:selected="focusCreateDriver"
-                                        v-model="form.vendor"
-                                        :options="vendors"
-                                        label="nama"
-                                        :reduce="v => v.id"
-                                        :open-on-focus="false"
-                                        :dropdownShouldOpen="dropdownVendor"
-                                        @mousedown="vendorUserClick = true"
-                                        @close="vendorUserClick = false"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                    >
-                                        <template #no-options>
-                                            <div class="text-sm p-2">
-                                                <button
-                                                    type="button"
-                                                    class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
-                                                    @click="handleopenvendor"
-                                                >
-                                                    + Tambah Vendor
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </vSelect>
-                                    <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Cara Bayar</label>
-                                </div>
-                                <div class="grid grid-cols-2">
-                                    <div>
-                                        <div class="relative">
-                                            <input ref="createtonase" @keydown.enter.prevent="createharga.focus" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
-                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Klaim mati</label>
-                                        </div>
-                                        <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
-                                    </div>
-                                    
-                                </div>
-                                <div class="grid grid-cols-2">
-                                    <div>
-                                        <div class="relative">
-                                            <input ref="createharga" @keydown.enter.prevent="create" @input="formatHarga" v-model="form.harga" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Rp. 0">
-                                            <label class="absolute left-3 -top-2.5 bg-white px-1 text-sm text-slate-700 peer-placeholder-shown:top-3">Kompenssasi</label>
-                                        </div>
-                                        <p v-if="err.harga" class="text-xs text-red-400">{{ err.harga[0] }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-x-5">
-                                <div>
-                                    <button type="submit" :disabled="isloadcreate" :class="isloadcreate ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                                        <svg class="mr-1 -ml-1 w-6 h-6" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                        </svg>
-                                        {{ isloadcreate ? 'Menambah' : 'Tambah baru' }}
-                                    </button>
-                                </div>
-                                <!-- <div>
-                                    Rp. {{ jumlah ? jumlah.toLocaleString('id-ID') : '-' }}
-                                </div> -->
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <!-- Update modal -->
-            <div v-if="openModalUpdate" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-2xl max-h-full">
-                    <!-- Modal content -->
-                    <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <!-- Modal header -->
-                        <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Update Sale</h3>
-                            <button type="button" @click.stop="openModalUpdate = false; reset" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="updateProductModal">
-                                <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                                <span class="sr-only">Close modal</span>
-                            </button>
-                        </div>
-                        <!-- Modal body -->
-                        <form @submit.prevent="edit">
-                            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-                                <div>
-                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Vendor</label>
-                                    <!-- <input ref="createfirstNameInput" @keydown.enter.prevent="createlastNameInput.focus()" v-model="form.nama" type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nama depan"> -->
-                                    <!-- <p v-if="err.nama" class="text-xs text-red-400">{{ err.nama[0] }}</p> -->
-                                    <vSelect
-                                        ref="editvendor"
-                                        @option:selected="focusEditDriver"
-                                        v-model="form.vendor"
-                                        :options="vendors"
-                                        label="nama"
-                                        :reduce="v => v.id"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                    >
-                                        <template #no-options>
-                                            <div class="text-sm p-2">
-                                                <button
-                                                    type="button"
-                                                    class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
-                                                    @click="handleopenvendor"
-                                                >
-                                                    + Tambah Vendor
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </vSelect>
-                                </div>
-                                <div>
-                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Driver</label>
-                                    <vSelect
-                                        ref="editdriver"
-                                        @option:selected="edittonase.focus()"
-                                        v-model="form.driver"
-                                        :options="drivers"
-                                        label="nama"
-                                        :reduce="d => d.id"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                    >
-                                        <template #no-options>
-                                            <div class="text-sm p-2">
-                                                <button
-                                                    type="button"
-                                                    class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
-                                                    @click="handleopendriver"
-                                                >
-                                                    + Tambah Driver
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </vSelect>
-                                </div>
-                                <div>
-                                    <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tonase</label>
-                                    <input ref="edittonase" @keydown.enter.prevent="editharga.focus()" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nama belakang">
-                                    <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
-                                </div>
-                                <div>
-                                    <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga</label>
-                                    <input ref="editharga" @keydown.enter.prevent="focusEditStatus" @input="formatHarga" v-model="form.harga" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nama belakang">
-                                    <p v-if="err.harga" class="text-xs text-red-400">{{ err.harga[0] }}</p>
-                                </div>
-                                <div class="sm:col-span-2">
-                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Status</label>
-                                    <vSelect
-                                        ref="editstatus"
-                                        @option:selected="edit"
-                                        v-model="form.status"
-                                        :options="statuses"
-                                        label="status"
-                                        :reduce="s => s.id"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                    >
-                                    </vSelect>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-x-5">
-                                <div>
-                                    <button type="submit" :disabled="isloadedit" :class="isloadedit ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                                        <svg class="mr-1 -ml-1 w-6 h-6" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                        </svg>
-                                        {{ isloadedit ? 'Mengubah' : 'Edit' }}
-                                    </button>
-                                </div>
-                                <div>
-                                    Rp. {{ jumlah ? jumlah.toLocaleString('id-ID') : '-' }}
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <!-- Read modal -->
-            <div v-if="openModalPreview" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-40 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-xl max-h-full">
-                    <!-- Modal content -->
-                    <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <!-- Modal header -->
-                        <div class="flex justify-between mb-4 rounded-t sm:mb-5">
-                            <div class="text-lg text-gray-900 md:text-xl dark:text-white">
-                                <h3 class="font-semibold ">Detail Pembelian</h3>
-                            </div>
-                            <div>
-                                <button type="button" @click.stop="openModalPreview = false" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 inline-flex dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="readProductModal">
-                                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span class="sr-only">Close modal</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="grid gap-4 mb-4 sm:grid-cols-2">
-                            <div>
-                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Vendor</label>
-                                <div>
-                                    {{ purchas.vendor.nama }}
-                                </div>
-                            </div>
-                            <div>
-                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Driver</label>
-                                {{ purchas.driver.nama }}
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Status</label>
-                                {{ purchas.status.status }}
-                            </div>
-                            <div>
-                                <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga</label>
-                                Rp. {{ Number(purchas.harga).toLocaleString('id-ID') }}
-                            </div>
-                            <div>
-                                <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tonase</label>
-                                Rp. {{ Number(purchas.tonase).toLocaleString('id-ID') }}
-                            </div>
-                        </div>
-                        <div>
-                            Rp. {{ Number(purchas.jumlah).toLocaleString('id-ID') }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Delete modal -->
-            <div v-if="openModalDelete" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-md max-h-full">
-                    <!-- Modal content -->
-                    <div class="relative p-4 text-center bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <button type="button" @click.stop="openModalDelete = false; reset" class="text-gray-400 absolute top-2.5 right-2.5 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="deleteModal">
-                            <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="sr-only">Close modal</span>
-                        </button>
-                        <svg class="text-gray-400 dark:text-gray-500 w-11 h-11 mb-3.5 mx-auto" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        <p class="mb-4 text-gray-500 dark:text-gray-300">Are you sure you want to delete this item?</p>
-                        <form @submit.prevent="hapus">
-                            <div class="flex justify-center items-center space-x-4">
-                                <button @click="openModalDelete = false; reset" type="button" class="py-2 px-3 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">Tidak, batal</button>
-                                <button type="submit" :disabled="isloaddelete" :class="isloaddelete ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="py-2 px-3 text-sm font-medium text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900">{{ isloaddelete ? 'Menghapus' : 'Ya, saya yakin' }}</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Create vendor -->
-            <div v-if="openVendorModal" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-[100] justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-2xl max-h-full">
-                    <!-- Modal content -->
-                    <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <!-- Modal header -->
-                        <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Vendor</h3>
-                            <button type="button" @click="handleclosevendor" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
-                                <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                                <span class="sr-only">Close modal</span>
-                            </button>
-                        </div>
-                        <!-- Modal body -->
-                        <form @submit.prevent="createvendorform">
-                            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-                                <div>
-                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama</label>
-                                    <input ref="createvendornama" @keydown.enter.prevent="createvendoralamat.focus()" v-model="formVendor.nama" type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nama">
-                                    <p v-if="errvendor.nama" class="text-xs text-red-400">{{ errvendor.nama[0] }}</p>
-                                </div>
-                                <div>
-                                    <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Alamat</label>
-                                    <input ref="createvendoralamat" @keydown.enter.prevent="createvendorform" v-model="formVendor.alamat" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Alamat">
-                                    <p v-if="errvendor.alamat" class="text-xs text-red-400">{{ errvendor.alamat[0] }}</p>
-                                </div>
-                            </div>
-                            <button type="submit" :disabled="isloadvendor" :class="isloadvendor ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                                <svg class="mr-1 -ml-1 w-6 h-6" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                </svg>
-                                {{ isloadvendor ? 'Menambah' : 'Tambah vendor baru' }}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Create driver -->
-            <div v-if="openDriverModal" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-[100] justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-2xl max-h-full">
-                    <!-- Modal content -->
-                    <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <!-- Modal header -->
-                        <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Driver</h3>
-                            <button type="button" @click="handleclosedriver" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
-                                <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                                <span class="sr-only">Close modal</span>
-                            </button>
-                        </div>
-                        <!-- Modal body -->
-                        <form @submit.prevent="createdriverform">
-                            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-                                <div>
-                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama</label>
-                                    <input ref="createdrivernama" @keydown.enter.prevent="createdrivertelp.focus()" v-model="formDriver.nama" type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nama">
-                                    <p v-if="errdriver.nama" class="text-xs text-red-400">{{ errdriver.nama[0] }}</p>
-                                </div>
-                                <div>
-                                    <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Telp</label>
-                                    <input ref="createdrivertelp" @keydown.enter.prevent="createdriverform" v-model="formDriver.telp" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Telp">
-                                    <p v-if="errdriver.telp" class="text-xs text-red-400">{{ errdriver.telp[0] }}</p>
-                                </div>
-                            </div>
-                            <button type="submit" :disabled="isloaddriver" :class="isloaddriver ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                                <svg class="mr-1 -ml-1 w-6 h-6" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                </svg>
-                                {{ isloaddriver ? 'Menambah' : 'Tambah driver baru' }}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            <create v-if="openModalCreate" 
+                        :vendors="vendors" 
+                        :drivers="drivers" 
+                        :statuses="statuses" 
+                        :payments="payments" 
+                        :customers="customers"
+                        @close="handleclosecreate"
+            />
+            <Update v-if="openModalUpdate"
+                    :vendors="vendors" 
+                    :drivers="drivers" 
+                    :statuses="statuses" 
+                    :payments="payments"
+                    :data="data"
+                    @close="handlecloseupdate"
+            />
+            <Show />
+            <Delete v-if="openModalDelete" @berhasil="" @close="" />
         </div>
     </AuthenticatedLayout>
 </template>
+
+

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('transaksis', function (Blueprint $table) {
             $table->id();
-            $table->integer('transaksi')->unique();
+            $table->string('transaksi')->unique();
             $table->foreignId('purchase_id')->constrained(
                 table: 'purchases',
                 indexName: 'transaksis_purchase_id'

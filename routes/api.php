@@ -7,16 +7,12 @@ use App\Http\Controllers\api\OperasionalController;
 use App\Http\Controllers\api\PurchaseController;
 use App\Http\Controllers\api\RekapitulasiController;
 use App\Http\Controllers\api\SalerController;
+use App\Http\Controllers\api\TransaksiController;
 use App\Http\Controllers\api\TypeOperasionalController;
 use App\Http\Controllers\api\VendorController;
 use App\Models\Purchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
 
 Route::middleware(['auth:sanctum'])->prefix('master')->group(function () {
     Route::get('/customers', [CustomerController::class, 'index']);
@@ -47,13 +43,13 @@ Route::middleware(['auth:sanctum'])->prefix('master')->group(function () {
 Route::middleware(['auth:sanctum'])->prefix('transaksi')->group(function () {
     Route::get('/purchases', [PurchaseController::class, 'index']);
     Route::get('/purchase/{id}', [PurchaseController::class, 'show']);
-    Route::post('/purchase', [PurchaseController::class, 'store']);
-    Route::patch('/purchase/{id}', [PurchaseController::class, 'update']);
+    //Route::post('/purchase', [PurchaseController::class, 'store']);
+    //Route::patch('/purchase/{id}', [PurchaseController::class, 'update']);
     Route::delete('/purchase/{id}', [PurchaseController::class, 'destroy']);
 
     Route::get('/salers', [SalerController::class, 'index']);
     Route::get('/saler/{id}', [SalerController::class, 'show']);
-    Route::post('/saler', [SalerController::class, 'store']);
+    //Route::post('/saler', [SalerController::class, 'store']);
     Route::patch('/saler/{id}', [SalerController::class, 'update']);
     Route::delete('/saler/{id}', [SalerController::class, 'destroy']);
 
@@ -62,6 +58,9 @@ Route::middleware(['auth:sanctum'])->prefix('transaksi')->group(function () {
     Route::post('/operasional', [OperasionalController::class, 'store']);
     Route::patch('/operasional/{id}', [OperasionalController::class, 'update']);
     Route::delete('/operasional/{id}', [OperasionalController::class, 'destroy']);
+
+    Route::post('/transaksi', [TransaksiController::class, 'store']);
+    Route::patch('/pembelian/{id}', [PurchaseController::class, 'update']);
 });
 
 Route::middleware(['auth:sanctum'])->prefix('rekapitulasi')->group(function () {

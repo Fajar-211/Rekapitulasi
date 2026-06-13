@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Http\Controllers\api\MethodeController;
 use App\Models\Customer;
 use App\Models\Driver;
+use App\Models\MethodePembayaran;
 use App\Models\Purchase;
 use App\Models\Saler;
 use App\Models\Status;
@@ -29,129 +31,41 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
             'password' => Hash::make('password')
         ]);
-        // Customer::create([
-        //     'nama_depan' => 'iksan',
-        //     'nama_belakang' => 'judi'
-        // ]);
-        // Customer::create([
-        //     'nama_depan' => 'memet',
-        //     'nama_belakang' => 'kurniawan'
-        // ]);
-        // Customer::create([
-        //     'nama_depan' => 'nana',
-        //     'nama_belakang' => 'olop'
-        // ]);
-        // Customer::create([
-        //     'nama_depan' => 'agil',
-        //     'nama_belakang' => 'kurniawan'
-        // ]);
-        // Customer::create([
-        //     'nama_depan' => 'iksan',
-        //     'nama_belakang' => 'judi'
-        // ]);
-        // Customer::create([
-        //     'nama_depan' => 'memet',
-        //     'nama_belakang' => 'kurniawan'
-        // ]);
-        // Customer::create([
-        //     'nama_depan' => 'nana',
-        //     'nama_belakang' => 'olop'
-        // ]);
-        // Customer::create([
-        //     'nama_depan' => 'agil',
-        //     'nama_belakang' => 'kurniawan'
-        // ]);
-        // Driver::create([
-        //     'nama' => 'ismet',
-        //     'telp' => '123123123'
-        // ]);
-        // Driver::create([
-        //     'nama' => 'oki',
-        //     'telp' => '123123123'
-        // ]);
-        // Driver::create([
-        //     'nama' => 'nazwa',
-        //     'telp' => '123123123'
-        // ]);
-        // Driver::create([
-        //     'nama' => 'man',
-        //     'telp' => '123123123'
-        // ]);
-        // Vendor::create([
-        //     'nama' => 'ismet',
-        //     'alamat' => 'Purbalingga keras'
-        // ]);
-        // Vendor::create([
-        //     'nama' => 'ismet',
-        //     'alamat' => 'Banyumas metal'
-        // ]);
-        // Status::create([
-        //     'status' => 'Lunas'
-        // ]);
-        // Status::create([
-        //     'status' => 'Belum lunas'
-        // ]);
-        // $harga1 = 34500;
-        // $tonase1 = 200;
-        // Purchase::create([
-        //     'vendor_id' => 1,
-        //     'driver_id' => 1,
-        //     'size' => 0,
-        //     'tanggal' => now(),
-        //     'tonase' => $tonase1,
-        //     'harga' => $harga1,
-        //     'status_id' => 1,
-        //     'jumlah' => $tonase1 * $harga1
-        // ]);
-        // $harga2 = 34500;
-        // $tonase2 = 200;
-        // Purchase::create([
-        //     'vendor_id' => 2,
-        //     'driver_id' => 2,
-        //     'size' => 0,
-        //     'tanggal' => now(),
-        //     'tonase' => $tonase2,
-        //     'harga' => $harga2,
-        //     'status_id' => 2,
-        //     'jumlah' => $tonase2 * $harga2
-        // ]);
-        // $tonase1 = 20.5;
-        // $tonasegp1 = 35.6;
-        // $harga1 = 15000;
-        // $hargagp1 = 15000;
-        // $kasbon1 = 500;
-        // $bongkar1 = 4000;
-        // $mati1 = 5;
-        // $jumlah = (($tonase1 - $mati1) * $harga1) + ($tonasegp1 * $hargagp1);
-        // $piutang = $jumlah - $kasbon1 - $bongkar1;
-        // $sel1 = Saler::create([
-        //     'customer_id' => 1,
-        //     'status_id' => 2,
-        //     'tonase' => $tonase1,
-        //     'tonase_gp' => $tonasegp1,
-        //     'harga' => $harga1,
-        //     'harga_gp' => $hargagp1,
-        //     'kasbon' => $kasbon1,
-        //     'bongkar' => $bongkar1,
-        //     'mati' => $mati1,
-        //     'piutang' => $piutang,
-        //     'jumlah' => $jumlah,
-        // ]);
-        // $sel1->titip()->create([
-        //     'nomor' => 1,
-        //     'nominal' => 2000
-        // ]);
-        // $type = TypeOperasional::create([
-        //     'type' => 'Bongkar'
-        // ]);
-        // $type->operasional()->create([
-        //     'jumlah' => 15000
-        // ]);
-        // $type->operasional()->create([
-        //     'jumlah' => 30000
-        // ]);
-        // $type->operasional()->create([
-        //     'jumlah' => 50000
-        // ]);
+        Status::create([
+            'status' => 'lunas'
+        ]);
+        Status::create([
+            'status' => 'belum lunas'
+        ]);
+        Vendor::create([
+            'nama' => 'Proliner',
+            'alamat' => 'Jakarta'
+        ]);
+        Vendor::create([
+            'nama' => 'Pointpro',
+            'alamat' => 'Jakarta'
+        ]);
+        Driver::create([
+            'nama' => 'Rahman',
+            'telp' => '081321321321'
+        ]);
+        Driver::create([
+            'nama' => 'Yogi',
+            'telp' => '081321321321'
+        ]);
+        MethodePembayaran::create([
+            'methode' => 'Transfer BRI'
+        ]);
+        MethodePembayaran::create([
+            'methode' => 'Transfer BCA'
+        ]);
+        Customer::create([
+            'nama_depan' => 'Suherman',
+            'nama_belakang' => 'hartono'
+        ]);
+        Customer::create([
+            'nama_depan' => 'Toni',
+            'nama_belakang' => 'Kurniawan'
+        ]);
     }
 }

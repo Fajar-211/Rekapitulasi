@@ -31,10 +31,10 @@ class MethodeController extends Controller
         $valid = Validator::make($request->all(), [
             'methode' => 'required|unique:methode_pembayarans,methode|string'
         ])->validate();
-        MethodePembayaran::create([
+        $methode = MethodePembayaran::create([
             'methode' => $valid['methode']
         ]);
-        return response()->json(['message' => 'succes']);
+        return response()->json(['message' => 'succes', 'methode' => $methode]);
     }
 
     /**

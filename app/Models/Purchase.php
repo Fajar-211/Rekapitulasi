@@ -12,7 +12,7 @@ class Purchase extends Model
 {
     /** @use HasFactory<\Database\Factories\PurchaseFactory> */
     use HasFactory;
-    protected $fillable = ['vendor_id', 'driver_id', 'tonase', 'harga', 'status_id', 'jumlah' . 'size', 'tanggal', 'transaksi'];
+    protected $fillable = ['vendor_id', 'driver_id', 'tonase', 'harga', 'methode_id', 'status_id', 'jumlah', 'size', 'tanggal', 'transaksi', 'mati', 'kompensasi'];
 
     public function status(): BelongsTo
     {

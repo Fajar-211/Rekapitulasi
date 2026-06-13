@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('purchases', function (Blueprint $table) {
             $table->id();
+            $table->date('tanggal');
             $table->foreignId('vendor_id')->constrained(
                 table: 'vendors',
                 indexName: 'purchases_vendor_id'
@@ -31,8 +32,9 @@ return new class extends Migration
             );
             $table->decimal('tonase');
             $table->decimal('harga');
-            $table->decimal('size');
-            $table->date('tanggal');
+            $table->decimal('size')->nullable();
+            $table->decimal('mati')->nullable();
+            $table->decimal('kompensasi')->nullable();
             $table->decimal('jumlah', 15, 2);
             $table->timestamps();
         });

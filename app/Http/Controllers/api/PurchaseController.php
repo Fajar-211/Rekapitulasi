@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Models\Driver;
+use App\Models\MethodePembayaran;
 use App\Models\Purchase;
 use App\Models\Status;
 use App\Models\Vendor;
@@ -26,11 +28,13 @@ class PurchaseController extends Controller
                 $query->where('status', 'like', '%' . $cari . '%');
             });
         }
-        $purchases = $query->with(['status', 'driver', 'vendor'])->paginate(15)->withQueryString();
+        $purchases = $query->with(['status', 'driver', 'vendor', 'methode'])->paginate(15)->withQueryString();
         $vendors = Vendor::all();
         $drivers = Driver::all();
         $status = Status::all();
-        return response()->json(['purchases' => $purchases, 'vendors' => $vendors, 'drivers' => $drivers, 'statuses' => $status]);
+        $payments = MethodePembayaran::all();
+        $customers = Customer::all();
+        return response()->json(['purchases' => $purchases, 'vendors' => $vendors, 'drivers' => $drivers, 'statuses' => $status, 'payments' => $payments, 'customers' => $customers]);
     }
 
     /**
@@ -71,11 +75,16 @@ class PurchaseController extends Controller
     {
         $purchase = Purchase::where('id', $id)->first();
         $valid = Validator::make($request->all(), [
+            'tanggal' => 'nullable|date',
             'vendor' => 'required|exists:vendors,id',
             'driver' => 'required|exists:drivers,id',
-            'harga' => 'required|numeric',
+            'size' => 'nullable|numeric',
             'tonase' => 'required|numeric',
-            'status' => 'required|exists:statuses,id'
+            'harga' => 'required|numeric',
+            'status' => 'required|exists:statuses,id',
+            'pembayaran' => 'required|exists:methode_pembayarans,id',
+            'mati' => 'nullable|numeric',
+            'kompensasi' => 'nullable|numeric',
         ])->validate();
         $purchase->update([
             'vendor_id' => $valid['vendor'],

@@ -17,7 +17,7 @@ return new class extends Migration
                 table: 'salers',
                 indexName: 'titip_saler_id'
             );
-            $table->integer('nomor');
+            $table->date('tanggal')->nullable();
             $table->decimal('nominal', 15);
             $table->timestamps();
         });
