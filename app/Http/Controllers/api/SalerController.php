@@ -22,22 +22,18 @@ class SalerController extends Controller
         $query = Saler::query();
         if ($request->search) {
             $cari = $request->search;
-            $query->whereHas('status', function ($query) use ($cari) {
-                $query->where('status', 'like', '%' . $cari . '%');
-            })->orwhereHas('customer', function ($query) use ($cari) {
+            $query->whereHas('customer', function ($query) use ($cari) {
                 $query->where('nama', 'like', '%' . $cari . '%');
             });
         }
-        $saler = $query->with(['status', 'customer', 'titip'])->paginate(15)->withQueryString();
+        $saler = $query->with(['customer', 'titip'])->paginate(15)->withQueryString();
         $customer = Customer::all();
-        $status = Status::all();
         $saler->getCollection()->transform(function ($s) {
             return [
                 'id' => $s->id,
                 'tanggal' => $s->created_at,
                 'tonase' => ($s->tonase + $s->tonase_gp) - $s->mati,
-                'customer' => $s->customer->nama_depan,
-                'status' => $s->status->status,
+                'customer' => $s->customer,
                 'harga' => $s->harga,
                 'jumlah' => $s->jumlah,
                 'kasbon' => $s->kasbon,
@@ -46,7 +42,7 @@ class SalerController extends Controller
                 'piutang' => $s->piutang - $s->titip->sum('nominal')
             ];
         });
-        return response()->json(['salers' => $saler, 'customers' => $customer, 'statuses' => $status]);
+        return response()->json(['salers' => $saler, 'customers' => $customer]);
     }
 
     /**

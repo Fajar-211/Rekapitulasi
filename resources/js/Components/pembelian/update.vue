@@ -93,8 +93,7 @@ async function create() {
             kompensasi: clear(form.value.pembelian.kompensasi)
         });
         reset();
-        focusvendor()
-        console.log(response.data.message);
+        emit("succes", true);
     }catch(error){
         err.value = error?.response?.data?.errors
         console.log(err.value);

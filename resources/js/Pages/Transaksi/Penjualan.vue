@@ -11,11 +11,11 @@ import "vue-select/dist/vue-select.css"
 import { useCurrencyInput } from 'vue-currency-input'
 import { computed } from 'vue';
 import { Datepicker } from 'flowbite-datepicker';
+import Update from '@/Components/penjualan/update.vue';
 
 let timeout = null;
 const menu = ref(null);
 const isloading = ref(false);
-const isloaddelete = ref(false);
 const isloadcreate = ref(false);
 const isloadedit = ref(false);
 const isloadshow = ref(false);
@@ -46,8 +46,7 @@ const search = ref('');
 const form = ref({
     id: '',
     tanggal: new Date().toISOString().split('T')[0],
-    customer: '',
-    status: '',
+    customer: {},
     tonase: null,
     tonasegp: null,
     harga: null,
@@ -74,11 +73,9 @@ const salers = ref([]);
 const saler = ref({});
 const customers = ref([]);
 const paginate = ref({});
-const statuses = ref([]);
 
 const openModalCreate = ref(false);
 const openModalUpdate = ref(false);
-const openModalDelete = ref(false);
 const openModalPreview = ref(false);
 
 const openCustomerModal = ref(false);
@@ -95,7 +92,6 @@ async function getsalers(page = 1) {
         salers.value = response.data.salers.data;
         paginate.value = response.data.salers;
         customers.value = response.data.customers;
-        statuses.value = response.data.statuses;
         console.log(response.data.salers);
     }catch(error){
         console.log(error?.response);
@@ -107,95 +103,6 @@ async function getsalers(page = 1) {
         })
     }finally{
         isloading.value = false
-    }
-}
-async function create() {
-    try{
-        isloadcreate.value = true;
-        form.value.tonase = parseNumber(form.value.tonase);
-        form.value.tonasegp = parseNumber(form.value.tonasegp);
-        form.value.harga = parseNumber(form.value.harga);
-        form.value.hargagp = parseNumber(form.value.hargagp);
-        form.value.mati = parseNumber(form.value.mati);
-        form.value.bongkar = parseNumber(form.value.bongkar);
-        form.value.kasbon = parseNumber(form.value.kasbon);
-        const response = await axios.post('/api/transaksi/saler', form.value);
-        reset();
-        await nextTick()
-        createcustomer.value?.$el.querySelector('input')?.focus()
-        //getcustomers();
-        console.log(response.data.message);
-    }catch(error){
-        console.log(error.response?.data);
-        err.value = error.response?.data?.errors ?? {}
-        Swal.fire({
-            title: error.response?.status,
-            text: error.response?.data?.message,
-            icon: 'error',
-            confirmButtonText: 'Coba lagi'
-        })
-    }finally{
-        isloadcreate.value = false
-    }
-}
-async function edit() {
-    try{
-        isloadedit.value = true
-        form.value.tonase = parseNumber(form.value.tonase);
-        form.value.tonasegp = parseNumber(form.value.tonasegp);
-        form.value.harga = parseNumber(form.value.harga);
-        form.value.hargagp = parseNumber(form.value.hargagp);
-        form.value.mati = parseNumber(form.value.mati);
-        form.value.bongkar = parseNumber(form.value.bongkar);
-        form.value.kasbon = parseNumber(form.value.kasbon);
-        const response = await axios.patch(`/api/transaksi/saler/${form.value.id}`, form.value);
-        openModalUpdate.value = false;
-        reset();
-        getsalers();
-        Swal.fire({
-            title: 'Berhasil!',
-            text: 'Data pembayaran berhasil dirubah',
-            icon: 'success',
-            confirmButtonText: 'OK'
-        })
-    }catch(error){
-        err.value = error.response.data.errors;
-        Swal.fire({
-            title: error.response.status,
-            text: error.response.data.message,
-            icon: 'error',
-            confirmButtonText: 'Coba lagi'
-        })
-    }finally{
-        isloadedit.value = false
-    }
-}
-async function hapus() {
-    try{
-        isloaddelete.value = true
-        const response = await axios.delete(`/api/transaksi/saler/${form.value.id}`);
-        Swal.fire({
-            title: 'Berhasil!',
-            text: 'Berhasil menghapus pembayaran',
-            icon: 'success',
-            confirmButtonText: 'OK'
-        })
-        openModalDelete.value = false;
-        reset();
-        getsalers();
-        //console.log(response.data);
-    }catch(error){
-        Swal.fire({
-            title: 'Gagal!',
-            text: `Kode error ${error.response.status}`,
-            icon: 'error',
-            confirmButtonText: 'Coba lagi nanti'
-        })
-        openModalDelete.value = false;
-        reset();
-        //console.log(error.response);
-    }finally{
-        isloaddelete.value = false
     }
 }
 async function show() {
@@ -227,37 +134,19 @@ function next(page){
 function page(page){
     getsalers(page);
 }
-
-function handlecreatepenjualan(){
-    openModalCreate.value = true;
-    tabcreate.value = 'form';
-}
-function handleaddtitipan(){
-    form.value.titip.push({
-        nominal: ''
-    });
-}
-function handledroptitipan(index){
-    form.value.titip.splice(index,1);
-}
 function detail(saler){
     form.value.id = saler.id;
-    form.value.customer = saler.customer.id
-    form.value.status = saler.status.id;
+    form.value.customer = saler.customer;
     form.value.harga = saler.harga;
-    form.value.hargagp = saler.harga_gp,
-    form.value.tonase = saler.tonase,
-    form.value.tonasegp = saler.tonase_gp,
-    form.value.kasbon = saler.kasbon,
-    form.value.bongkar = saler.bongkar,
-    form.value.mati = saler.mati
-    form.value.jumlah = saler.jumlah,
+    form.value.hargagp = saler.harga_gp;
+    form.value.tonase = saler.tonase;
+    form.value.tonasegp = saler.tonase_gp;
+    form.value.kasbon = saler.kasbon;
+    form.value.bongkar = saler.bongkar;
+    form.value.mati = saler.mati;
+    form.value.jumlah = saler.jumlah;
     form.value.titip = saler.titip ?? []
     openModalUpdate.value = true;
-}
-function del(saler){
-    form.value.id = saler.id;
-    openModalDelete.value = true
 }
 function preview(saler){
     openModalPreview.value = true
@@ -267,8 +156,7 @@ function preview(saler){
 
 function reset(){
     form.value.id = '';
-    form.value.customer = '';
-    form.value.status = '';
+    form.value.customer = {};
     form.value.harga = null;
     form.value.hargagp = null;
     form.value.tonase = null;
@@ -281,62 +169,10 @@ function reset(){
     err.value = {};
     saler.value = [];
 }
-
-//customer
-const createcustomerfirst = ref(null)
-const createcustomerlast = ref(null);
-async function handleopencustomer(){
-    openCustomerModal.value = true;
-    await nextTick()
-    createcustomerfirst.value?.focus();
+function handlecloseupdate(){
+    openModalUpdate.value = false;
+    reset();
 }
-function handleclosecustomer(){
-    openCustomerModal.value = false;
-    resetCustomer();
-}
-function resetCustomer(){
-    formCustomer.value.first = '';
-    formCustomer.value.last = '';
-    createcustomerfirst.value = null;
-    createcustomerlast.value = null;
-}
-const formCustomer = ref({
-    first: '',
-    last: ''
-})
-const errcustomer = ref({});
-const isloadcustomer = ref(false);
-async function createcustomerform() {
-    try{
-        isloadcustomer.value = true;
-        const response = await axios.post('/api/master/customer', formCustomer.value);
-        handleclosevendor()
-        customers.value.push(response.data.vendor);
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'success',
-            title: 'Berhasil membuat customer',
-            showConfirmButton: false,
-            timer: 2000
-        })
-        console.log(response.data.vendor)
-        await nextTick()
-        createcustomer.value?.$el.querySelector('input')?.focus()
-    }catch(error){
-        console.log(error);
-        errcustomer.value = error.response.data?.errors ?? {};
-        Swal.fire({
-            title: error.response.status,
-            text: error.response.data?.message,
-            icon: 'error',
-            confirmButtonText: 'Coba lagi'
-        })
-    }finally{
-        isloadcustomer.value = false;
-    }
-}
-
 watch(search, (value) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
@@ -363,28 +199,7 @@ watch(openModalCreate, async (val) => {
         createcustomer.value?.$el.querySelector('input')?.focus()
     }
 })
-function dropdownCustomer() {
-    return customerUserClick.value
-}
-async function focusCreateHarga(){
-    await nextTick()
-    createharga.value?.focus()
-}
 
-watch(openModalUpdate, async (val) => {
-    if (val) {
-        await nextTick()
-        editcustomer.value?.$el.querySelector('input')?.focus()
-    }
-})
-async function focusEditStatus() {
-    await nextTick()
-    editstatus.value?.$el.querySelector('input')?.focus()
-}
-async function focusEditHarga(){
-    await nextTick()
-    editharga.value?.focus()
-}
 
 //format tnaggal, uang dan ref nya
 function formatHarga(e) {
@@ -520,7 +335,6 @@ function formatDate(dateString) {
                                     <th scope="col" class="px-4 py-3">BONGKAR</th>
                                     <th scope="col" class="px-4 py-3">TITIP</th>
                                     <th scope="col" class="px-4 py-3">PIUTANG</th>
-                                    <th scope="col" class="px-4 py-3">STATUS</th>
                                     <th scope="col" class="px-4 py-3">
                                         <span class="sr-only">Actions</span>
                                     </th>
@@ -531,7 +345,7 @@ function formatDate(dateString) {
                                     <tr v-for="(saler, index) in salers" :key="index" class="border-b dark:border-gray-700">
                                         <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ paginate.from + index }}</th>
                                         <td class="px-4 py-3">{{ formatDate(saler.tanggal) }}</td>
-                                        <td class="px-4 py-3">{{ saler.customer }}</td>
+                                        <td class="px-4 py-3">{{ saler.customer.nama_depan }}</td>
                                         <td class="px-4 py-3">{{ formatTonaseview(Number(saler.tonase)) }}</td>
                                         <td class="px-4 py-3">{{ Number(saler.harga).toLocaleString('id-ID') }}</td>
                                         <td class="px-4 py-3">{{ Number(saler.jumlah).toLocaleString('id-ID') }}</td>
@@ -539,7 +353,6 @@ function formatDate(dateString) {
                                         <td class="px-4 py-3">{{ Number(saler.bongkar).toLocaleString('id-ID') }}</td>
                                         <td class="px-4 py-3">{{ saler.titip ? saler.titip : '-' }}</td>
                                         <td class="px-4 py-3">{{ Number(saler.piutang).toLocaleString('id-ID') }}</td>
-                                        <td class="px-4 py-3" :class="saler.status == 'Lunas' ? 'text-emerald-500' : 'text-red-500' ">{{ saler.status }}</td>
                                         <td class="px-4 py-3 flex items-center justify-end">
                                             <button @click.stop="menu = menu === index ? null : index" class="inline-flex items-center text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 p-1.5 dark:hover-bg-gray-800 text-center text-gray-500 hover:text-gray-800 rounded-lg focus:outline-none" type="button">
                                                 <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -566,14 +379,6 @@ function formatDate(dateString) {
                                                             Preview
                                                         </button>
                                                     </li>
-                                                    <li>
-                                                        <button type="button" @click="del(saler)" class="flex w-full items-center py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500 dark:hover:text-red-400">
-                                                            <svg class="w-4 h-4 mr-2" viewbox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                                                <path fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" d="M6.09922 0.300781C5.93212 0.30087 5.76835 0.347476 5.62625 0.435378C5.48414 0.523281 5.36931 0.649009 5.29462 0.798481L4.64302 2.10078H1.59922C1.36052 2.10078 1.13161 2.1956 0.962823 2.36439C0.79404 2.53317 0.699219 2.76209 0.699219 3.00078C0.699219 3.23948 0.79404 3.46839 0.962823 3.63718C1.13161 3.80596 1.36052 3.90078 1.59922 3.90078V12.9008C1.59922 13.3782 1.78886 13.836 2.12643 14.1736C2.46399 14.5111 2.92183 14.7008 3.39922 14.7008H10.5992C11.0766 14.7008 11.5344 14.5111 11.872 14.1736C12.2096 13.836 12.3992 13.3782 12.3992 12.9008V3.90078C12.6379 3.90078 12.8668 3.80596 13.0356 3.63718C13.2044 3.46839 13.2992 3.23948 13.2992 3.00078C13.2992 2.76209 13.2044 2.53317 13.0356 2.36439C12.8668 2.1956 12.6379 2.10078 12.3992 2.10078H9.35542L8.70382 0.798481C8.62913 0.649009 8.5143 0.523281 8.37219 0.435378C8.23009 0.347476 8.06631 0.30087 7.89922 0.300781H6.09922ZM4.29922 5.70078C4.29922 5.46209 4.39404 5.23317 4.56282 5.06439C4.73161 4.8956 4.96052 4.80078 5.19922 4.80078C5.43791 4.80078 5.66683 4.8956 5.83561 5.06439C6.0044 5.23317 6.09922 5.46209 6.09922 5.70078V11.1008C6.09922 11.3395 6.0044 11.5684 5.83561 11.7372C5.66683 11.906 5.43791 12.0008 5.19922 12.0008C4.96052 12.0008 4.73161 11.906 4.56282 11.7372C4.39404 11.5684 4.29922 11.3395 4.29922 11.1008V5.70078ZM8.79922 4.80078C8.56052 4.80078 8.33161 4.8956 8.16282 5.06439C7.99404 5.23317 7.89922 5.46209 7.89922 5.70078V11.1008C7.89922 11.3395 7.99404 11.5684 8.16282 11.7372C8.33161 11.906 8.56052 12.0008 8.79922 12.0008C9.03791 12.0008 9.26683 11.906 9.43561 11.7372C9.6044 11.5684 9.69922 11.3395 9.69922 11.1008V5.70078C9.69922 5.46209 9.6044 5.23317 9.43561 5.06439C9.26683 4.8956 9.03791 4.80078 8.79922 4.80078Z" />
-                                                            </svg>
-                                                            Delete
-                                                        </button>
-                                                    </li>
                                                 </ul>
                                             </div>
                                         </td>
@@ -589,254 +394,7 @@ function formatDate(dateString) {
                     </div>
                     <Paginate :paginate="paginate" @prev="prev" @next="next" @page="page" />
                 </div>
-            </div>
-
-            <!-- Update modal -->
-            <div v-if="openModalUpdate" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-2xl max-h-full">
-                    <!-- Modal content -->
-                    <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <!-- Modal header -->
-                         <div class="border-b pb-3 mb-4">
-                            <div class="flex justify-between items-center pb-1 rounded-t sm:mb-5 dark:border-gray-600">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Update Product</h3>
-                                <button type="button" @click.stop="openModalUpdate = false; reset" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="updateProductModal">
-                                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span class="sr-only">Close modal</span>
-                                </button>
-                            </div>
-                            <div>
-                                <button type="button" class="max-w-max inline-block text-sm text-slate-900" @click="tabcreate = 'form'" :class="tabcreate == 'form' ? 'opacity-100' : 'opacity-50'">Penjualan</button>
-                                <span class="text-sm mx-1 transition-all duration-500">{{ tabcreate == 'form' ? '>>' : '<<' }}</span>
-                                <button type="button" class="max-w-max inline-block text-sm text-slate-900" @click="tabcreate = 'titip'" :class="tabcreate == 'titip' ? 'opacity-100' : 'opacity-50'">Titip</button>
-                            </div>
-                         </div>
-                        <!-- Modal body -->
-                        <form @submit.prevent="edit">
-                            <div v-if="tabcreate == 'form'" class="grid gap-4 mb-4">
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Customer</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <vSelect
-                                            ref="editcustomer"
-                                            @option:selected="edittonase.focus()"
-                                            v-model="form.customer"
-                                            :options="customers"
-                                            label="nama_depan"
-                                            :reduce="c => c.id"
-                                            :open-on-focus="false"
-                                            :dropdownShouldOpen="dropdownCustomer"
-                                            @mousedown="customerUserClick = true"
-                                            @close="customerUserClick = false"
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        >
-                                            <template #no-options>
-                                                <div class="text-sm p-2">
-                                                    <button
-                                                        type="button"
-                                                        class="bg-blue-500 w-full rounded-lg py-2 text-white hover:bg-blue-600"
-                                                        @click="handleopencustomer"
-                                                    >
-                                                        + Tambah Customer
-                                                    </button>
-                                                </div>
-                                            </template>
-                                        </vSelect>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tonase Normal</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="editetonase" @keydown.enter.prevent="edittonasegp.focus()" @input="formatTonase" v-model="form.tonase" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Tonase">
-                                        <p v-if="err.tonase" class="text-xs text-red-400">{{ err.tonase[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tonase GP</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="edittonasegp" @keydown.enter.prevent="editharga.focus()" @input="formatTonaseGP" v-model="form.tonasegp" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Tonase GP">
-                                        <p v-if="err.tonasegp" class="text-xs text-red-400">{{ err.tonasegp[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga Normal</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="editharga" @keydown.enter.prevent="edithargagp.focus()" @input="formatHarga" v-model="form.harga" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Harga">
-                                        <p v-if="err.harga" class="text-xs text-red-400">{{ err.harga[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga GP</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="edithargagp" @keydown.enter.prevent="editmati.focus()" @input="formatHargaGP" v-model="form.hargagp" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Harga GP">
-                                        <p v-if="err.hargagp" class="text-xs text-red-400">{{ err.hargagp[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Potong Mati</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="editmati" @keydown.enter.prevent="editkasbon.focus()" @input="formatMati" v-model="form.mati" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Mati">
-                                        <p v-if="err.mati" class="text-xs text-red-400">{{ err.mati[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Kasbon</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="editkasbon" @keydown.enter.prevent="editbongkar.focus()" @input="formatKasbon" v-model="form.kasbon" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Kasbon">
-                                        <p v-if="err.kasbon" class="text-xs text-red-400">{{ err.kasbon[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Bongkar</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input ref="editbongkar" @keydown.enter.prevent="focusEditStatus" @input="formatBongkar" v-model="form.bongkar" type="text" name="brand" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Bongkar">
-                                        <p v-if="err.bongkar" class="text-xs text-red-400">{{ err.bongkar[0] }}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3">
-                                    <div>
-                                        <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Status</label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <vSelect
-                                            ref="editstatus"
-                                            @option:selected="edit"
-                                            v-model="form.status"
-                                            :options="statuses"
-                                            label="status"
-                                            :reduce="s => s.id"
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        >
-                                        </vSelect>
-                                        <p v-if="err.status" class="text-xs text-red-400">{{ err.status[0] }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-else class="pb-4 border-b">
-                                <button type="button" @click="handleaddtitipan" class="px-3 py-2 rounded-lg bg-sky-400 text-white hover:bg-sky-500 active:ring-1 active:ring-sky-300">Tambah titipan</button>
-                                <div v-if="form.titip.length > 0" class="mt-2">
-                                    <div v-for="(titip, index) in form.titip" :key="index" class="grid grid-cols-3 my-2">
-                                        <div class="flex items-center">
-                                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Titip {{ index + 1 }}</label>
-                                            <button @click="handledroptitipan(index)" type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-0.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
-                                                <svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                                </svg>
-                                                <span class="sr-only">Close modal</span>
-                                            </button>
-                                        </div>
-                                        <div class="col-span-2">
-                                            <input @input="(e) => formatTitip(e, index)" v-model="form.titip[index].nominal" type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                                            <p class="text-xs text-red-400">nominal tidak boleh 0</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-x-5">
-                                <div>
-                                    <button type="submit" :disabled="isloadedit" :class="isloadedit ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                                        <svg class="mr-1 -ml-1 w-6 h-6" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                        </svg>
-                                        {{ isloadedit ? 'Menambah' : 'Tambah baru' }}
-                                    </button>
-                                </div>
-                                <div>
-                                    Rp. {{ jumlah ? jumlah.toLocaleString('id-ID') : '-' }}
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <!-- Read modal -->
-            <div v-if="openModalPreview" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-40 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-xl max-h-full">
-                    <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <div class="flex justify-between mb-4 rounded-t sm:mb-5">
-                            <div class="text-lg text-gray-900 md:text-xl dark:text-white">
-                                <h3 class="font-semibold ">Detail Penjualan</h3>
-                            </div>
-                            <div>
-                                <button type="button" @click.stop="openModalPreview = false" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 inline-flex dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="readProductModal">
-                                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span class="sr-only">Close modal</span>
-                                </button>
-                            </div>
-                        </div>
-                        <!-- <div class="grid gap-4 mb-4 sm:grid-cols-2">
-                            <div>
-                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Vendor</label>
-                                <div>
-                                    {{ purchas.vendor.nama }}
-                                </div>
-                            </div>
-                            <div>
-                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Driver</label>
-                                {{ purchas.driver.nama }}
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Status</label>
-                                {{ purchas.status.status }}
-                            </div>
-                            <div>
-                                <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga</label>
-                                Rp. {{ Number(purchas.harga).toLocaleString('id-ID') }}
-                            </div>
-                            <div>
-                                <label for="brand" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tonase</label>
-                                Rp. {{ Number(purchas.tonase).toLocaleString('id-ID') }}
-                            </div>
-                        </div>
-                        <div>
-                            Rp. {{ Number(purchas.jumlah).toLocaleString('id-ID') }}
-                        </div> -->
-                    </div>
-                </div>
-            </div>
-            <!-- Delete modal -->
-            <div v-if="openModalDelete" tabindex="-1" aria-hidden="true" class="overflow-y-auto bg-slate-900/50 h-screen overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 max-h-full flex inset-0">
-                <div class="relative p-4 w-full max-w-md max-h-full">
-                    <!-- Modal content -->
-                    <div class="relative p-4 text-center bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                        <button type="button" @click.stop="openModalDelete = false; reset" class="text-gray-400 absolute top-2.5 right-2.5 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="deleteModal">
-                            <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="sr-only">Close modal</span>
-                        </button>
-                        <svg class="text-gray-400 dark:text-gray-500 w-11 h-11 mb-3.5 mx-auto" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        <p class="mb-4 text-gray-500 dark:text-gray-300">Are you sure you want to delete this item?</p>
-                        <form @submit.prevent="hapus">
-                            <div class="flex justify-center items-center space-x-4">
-                                <button @click="openModalDelete = false; reset" type="button" class="py-2 px-3 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">Tidak, batal</button>
-                                <button type="submit" :disabled="isloaddelete" :class="isloaddelete ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'" class="py-2 px-3 text-sm font-medium text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900">{{ isloaddelete ? 'Menghapus' : 'Ya, saya yakin' }}</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <Update v-if="openModalUpdate" :data="form" :customers="customers" @close="handlecloseupdate" />
             </div>
     </AuthenticatedLayout>
 </template>

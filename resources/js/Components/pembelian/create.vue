@@ -330,7 +330,7 @@ const triggerCustomerSearch = ref(false);
     })
     //customer
     function dropdownCustomer() {
-        return triggerVendorSearch.value
+        return triggerCustomerSearch.value;
     }
     const finalCustomers = computed(() => {
         if (!triggerCustomerSearch.value) return []

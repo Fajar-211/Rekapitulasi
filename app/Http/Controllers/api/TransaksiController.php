@@ -26,7 +26,7 @@ class TransaksiController extends Controller
      */
     public function store(Request $request)
     {
-        //return response()->json(['request' => $request->all()]);
+        //return response()->json(['message' => $request->all()]);
         $valid = Validator::make($request->all(), [
             'pembelian.tanggal' => 'nullable|date',
             'pembelian.vendor' => 'required|exists:vendors,id',
@@ -115,6 +115,7 @@ class TransaksiController extends Controller
             DB::rollBack();
             Log::error([
                 'message' => $e->getMessage(),
+                'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
             return response()->json(['message' => $e->getMessage()], 500);
