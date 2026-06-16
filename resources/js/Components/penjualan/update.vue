@@ -43,11 +43,13 @@ async function update() {
             mati: clear(form.value.penjualan.mati),
             titip: form.value.penjualan.titip
         });
+        reset();
+        emit("succes", true);
     }catch(error){
-        err.value = error.response.data.errors;
+        err.value = error?.response?.data?.errors;
         Swal.fire({
-            title: error.response.status,
-            text: error.response.data.message,
+            title: error?.response?.status,
+            text: error?.response?.data?.message,
             icon: 'error',
             confirmButtonText: 'Coba lagi'
         })
@@ -71,6 +73,19 @@ const form = ref({
     mati: '',
     titip: []
 });
+function reset(){
+    form.value.id = '';
+    form.value.tanggal = new Date().toISOString().split('T')[0];
+    form.value.customer = '';
+    form.value.tonase = '';
+    form.value.tonasegp = '';
+    form.value.harga = '';
+    form.value.hargagp = '';
+    form.value.kasbon = '';
+    form.value.bongkar = '';
+    form.value.mati = '';
+    form.value.titip = [];
+}
 function handleaddtitipan(){
     form.value.titip.push({
         nominal: '',

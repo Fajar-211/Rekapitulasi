@@ -173,6 +173,22 @@ function handlecloseupdate(){
     openModalUpdate.value = false;
     reset();
 }
+function handlesuccesupdate(value){
+    openCustomerModal.value = false;
+    reset();
+    if(value){
+        Swal.fire({
+            toast: true,
+            position: 'top-end', // kanan atas
+            icon: 'success',
+            title: 'Data berhasil diubah',
+            showConfirmButton: false,
+            timer: 3000, // 3 detik
+            timerProgressBar: true
+        });
+    }
+    getsalers();
+}
 watch(search, (value) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
@@ -394,7 +410,7 @@ function formatDate(dateString) {
                     </div>
                     <Paginate :paginate="paginate" @prev="prev" @next="next" @page="page" />
                 </div>
-                <Update v-if="openModalUpdate" :data="form" :customers="customers" @close="handlecloseupdate" />
+                <Update v-if="openModalUpdate" :data="form" :customers="customers" @close="handlecloseupdate" @succes="handlesuccesupdate" />
             </div>
     </AuthenticatedLayout>
 </template>
